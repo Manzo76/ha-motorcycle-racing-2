@@ -6,7 +6,7 @@
 set -euo pipefail
 
 OWNER="${OWNER:-Manzo76}"
-REPO_NAME="${1:-ha-motorcycle-racing}"
+REPO_NAME="${1:-ha-motorcycle-racing-2}"
 VISIBILITY="${2:-public}"
 
 git init -b main
