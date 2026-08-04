@@ -1,0 +1,13 @@
+{
+  "domain": "motorcycle_racing",
+  "name": "Motorcycle Racing",
+  "codeowners": ["@Manzo76"],
+  "config_flow": true,
+  "dependencies": ["http", "frontend"],
+  "documentation": "https://github.com/Manzo76/ha-motorcycle-racing",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Manzo76/ha-motorcycle-racing/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

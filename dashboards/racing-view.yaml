@@ -1,0 +1,115 @@
+# Motorcycle Racing — example dashboard view
+#
+# Paste this into a YAML-mode dashboard, or use "Raw configuration editor" on a
+# storage dashboard. Entity ids assume a MotoGP entry and a WorldSBK entry; run
+# Developer Tools → States and filter on "motorcycle" if yours differ.
+
+views:
+  - title: Racing
+    path: racing
+    icon: mdi:motorbike
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: motogp
+            title: MotoGP
+            standings_rows: 6
+            results_rows: 6
+
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: worldsbk
+            title: WorldSBK
+            accent: "#E4002B"
+            standings_rows: 5
+            results_rows: 5
+
+      - type: grid
+        cards:
+          - type: calendar
+            title: Race calendar
+            initial_view: listWeek
+            entities:
+              - calendar.motogp
+              - calendar.worldsbk
+
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: binary_sensor.motogp_race_weekend
+                state: "on"
+            card:
+              type: markdown
+              content: >-
+                ## 🏁 {{ state_attr('sensor.motogp_next_race', 'name') }}
+
+                **{{ state_attr('sensor.motogp_next_race', 'circuit') }}** ·
+                {{ state_attr('sensor.motogp_next_race', 'country') }}
+
+                Next up: **{{ states('sensor.motogp_next_session') }}** —
+                {{ relative_time(states.sensor.motogp_next_session_time.state | as_datetime) }}
+                {% set w = state_attr('sensor.motogp_next_session', 'weather') %}
+                {% if w %}
+
+                Track {{ w.track }} · Air {{ w.air }} · {{ w.weather }}
+                {% endif %}
+
+          - type: entities
+            title: Season
+            entities:
+              - entity: sensor.motogp_season_round
+                name: Rounds completed
+              - entity: sensor.motogp_rider_standings
+                name: Championship leader
+              - entity: sensor.motogp_team_standings
+                name: Leading team
+              - entity: sensor.motogp_last_race
+                name: Last winner
+              - entity: binary_sensor.motogp_race_day
+                name: Race day
+
+# ---------------------------------------------------------------------------
+# Example automations — put these in automations.yaml
+# ---------------------------------------------------------------------------
+#
+# - alias: "MotoGP — lights out reminder"
+#   triggers:
+#     - trigger: time
+#       at:
+#         entity_id: sensor.motogp_next_session_time
+#         offset: "-00:15:00"
+#   conditions:
+#     - condition: state
+#       entity_id: sensor.motogp_next_session
+#       attribute: kind
+#       state: race
+#   actions:
+#     - action: notify.send_message
+#       target:
+#         entity_id: notify.iphone
+#       data:
+#         title: "🏁 MotoGP starts in 15 minutes"
+#         message: >-
+#           {{ state_attr('sensor.motogp_next_race', 'name') }} at
+#           {{ state_attr('sensor.motogp_next_race', 'circuit') }}.
+#
+# - alias: "MotoGP — result when the flag drops"
+#   triggers:
+#     - trigger: state
+#       entity_id: sensor.motogp_last_race
+#   conditions:
+#     - condition: template
+#       value_template: "{{ trigger.from_state.state not in ['unknown', 'unavailable'] }}"
+#   actions:
+#     - action: notify.send_message
+#       target:
+#         entity_id: notify.iphone
+#       data:
+#         title: "🏆 {{ states('sensor.motogp_last_race') }} wins"
+#         message: >-
+#           {% set p = state_attr('sensor.motogp_last_race', 'podium') %}
+#           {% for r in p %}{{ r.position }}. {{ r.rider }}{% if not loop.last %} · {% endif %}{% endfor %}

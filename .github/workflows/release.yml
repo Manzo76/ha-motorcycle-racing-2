@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  version:
+    name: Stamp version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set manifest version to the release tag
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          tag="${tag#v}"
+          python - "$tag" <<'PY'
+          import json, sys, pathlib
+          path = pathlib.Path("custom_components/motorcycle_racing/manifest.json")
+          data = json.loads(path.read_text())
+          data["version"] = sys.argv[1]
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Set version to ${GITHUB_REF#refs/tags/}" || echo "nothing to do"
+          git push origin HEAD:main || true
