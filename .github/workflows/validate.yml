@@ -23,6 +23,12 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # "brands" requires a merged PR against home-assistant/brands (a
+          # separate repo, reviewed by HA maintainers) - out of scope for
+          # this repo's own CI. hacs/action wants a SPACE-separated list
+          # here, not comma-separated - a comma makes the whole string one
+          # unmatched token and nothing gets ignored.
+          ignore: brands
 
   python:
     name: Syntax
