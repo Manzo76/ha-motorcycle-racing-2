@@ -34,7 +34,7 @@ views:
 
   - title: Moto2
     path: moto2
-    icon: mdi:motorbike
+    icon: mdi:numeric-2-circle
     type: sections
     max_columns: 3
     sections:
@@ -55,7 +55,7 @@ views:
 
   - title: Moto3
     path: moto3
-    icon: mdi:motorbike
+    icon: mdi:numeric-3-circle
     type: sections
     max_columns: 3
     sections:
@@ -97,7 +97,7 @@ views:
 
   - title: WorldSBK
     path: worldsbk
-    icon: mdi:motorbike
+    icon: mdi:earth
     type: sections
     max_columns: 3
     sections:
@@ -119,7 +119,7 @@ views:
 
   - title: BSB
     path: bsb
-    icon: mdi:motorbike
+    icon: mdi:racing-helmet
     type: sections
     max_columns: 3
     sections:
@@ -138,6 +138,19 @@ views:
             initial_view: listWeek
             entities:
               - calendar.bsb
+
+  # The bundled `custom:motorcycle-racing-tv-card` finds every configured
+  # series automatically (same device-registry lookup as the main card) and
+  # lists the next UK broadcast for each one — no per-series config needed.
+  - title: On TV
+    path: on-tv
+    icon: mdi:television-play
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-tv-card
 
 # ---------------------------------------------------------------------------
 # Example automations — put these in automations.yaml. Swap "motogp" for
