@@ -50,7 +50,22 @@ MOTORCYCLE_HINTS = (
 _RESULT_LINE = re.compile(r"^\s*(?:P|POS\.?)?\s*(\d{1,2})\s*[.)\-:|]?\s+(.+)$", re.I)
 # Rider and team are separated by two spaces, a tab, a pipe or a spaced dash.
 _FIELD_SPLIT = re.compile(r"\s{2,}|\t+|\s*\|\s*|\s+[-–]\s+")
+# Some leagues (WorldSBK/TheSportsDB) tab-separate fields that are each
+# prefixed with a stray "/" - not part of the name, just their export format.
+_TAB_SPLIT = re.compile(r"\t+")
+# The same "/"-prefixed field, but space-separated - used in the standings
+# block TheSportsDB sometimes appends after the race classification.
+_SLASH_FIELD_SPLIT = re.compile(r"\s+/")
 _HAS_LETTERS = re.compile(r"[A-Za-zÀ-ÿ]")
+# TheSportsDB sometimes appends a "Driver Standings" recap (in the same
+# "N. Name" line shape) after a "----" divider - stop there so it isn't
+# parsed as more race results.
+_STOP_MARKER = re.compile(r"^-{3,}$|standings", re.I)
+
+
+def _clean_field(value: str) -> str:
+    """Strip TheSportsDB's leading "/" field-separator artifact and whitespace."""
+    return value.strip(" \t\-–/")
 
 
 def _split_results(blob: str | None) -> list[ResultRow]:
@@ -58,23 +73,76 @@ def _split_results(blob: str | None) -> list[ResultRow]:
     if not blob:
         return []
     rows: list[ResultRow] = []
-    for line in blob.replace("\r", "\n").split("\n"):
-        line = line.strip()
+    for raw_line in blob.replace("\r", "\n").split("\n"):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if _STOP_MARKER.search(line):
+            break
+        match = _RESULT_LINE.match(line)
+        if not match:
+            continue
+        position, remainder = match.groups()
+        if "\t" in raw_line:
+            fields = [_clean_field(p) for p in _TAB_SPLIT.split(remainder) if p.strip(" \t\-–/")]
+        else:
+            fields = [_clean_field(p) for p in _FIELD_SPLIT.split(remainder, maxsplit=1)]
+        if not fields:
+            continue
+        rider = fields[0]
+        if len(rider) < 3 or not _HAS_LETTERS.search(rider):
+            continue
+        time_or_gap = fields[2] if len(fields) > 2 else None
+        rows.append(
+            ResultRow(
+                position=to_int(position),
+                rider=rider,
+                team=(fields[1] if len(fields) > 1 else "") or None,
+                time=time_or_gap,
+                gap=time_or_gap,
+            )
+        )
+    rows.sort(key=lambda r: r.position if r.position is not None else 999)
+    return rows
+
+
+def _split_standings_from_text(blob: str | None) -> list[StandingRow]:
+    """Parse the "Driver Standings" recap TheSportsDB sometimes appends to
+    strResult, as a fallback when lookuptable.php has no data for a league
+    (common for motorsport leagues on TheSportsDB's free tier - WorldSBK
+    included).
+    """
+    if not blob:
+        return []
+    lines = blob.replace("\r", "\n").split("\n")
+    start = None
+    for i, line in enumerate(lines):
+        if re.search(r"standings", line, re.I):
+            start = i + 1
+            break
+    if start is None:
+        return []
+    rows: list[StandingRow] = []
+    for raw_line in lines[start:]:
+        line = raw_line.strip()
         if not line:
             continue
         match = _RESULT_LINE.match(line)
         if not match:
             continue
         position, remainder = match.groups()
-        fields = [part.strip(" -–\t") for part in _FIELD_SPLIT.split(remainder, maxsplit=1)]
-        rider = fields[0]
-        if len(rider) < 3 or not _HAS_LETTERS.search(rider):
+        fields = [_clean_field(p) for p in _SLASH_FIELD_SPLIT.split(remainder) if p.strip(" \t\-–/")]
+        if not fields:
+            continue
+        name = fields[0]
+        if len(name) < 3 or not _HAS_LETTERS.search(name):
             continue
         rows.append(
-            ResultRow(
+            StandingRow(
                 position=to_int(position),
-                rider=rider,
-                team=(fields[1] if len(fields) > 1 else "") or None,
+                name=name,
+                team=fields[1] if len(fields) > 1 else None,
+                points=to_float(fields[2]) if len(fields) > 2 else None,
             )
         )
     rows.sort(key=lambda r: r.position if r.position is not None else 999)
@@ -276,17 +344,26 @@ class SportsDBProvider(RacingProvider):
             elif session.start and session.end and session.start <= now <= session.end:
                 data.live_session = session
 
+        fallback_standings: list[StandingRow] = []
         if data.last_event:
             detail = await self._get_json(
                 f"{self._root}/lookupevent.php", {"id": data.last_event.event_id}
             )
             found = (detail or {}).get("events") or []
             if found:
-                data.last_results = _split_results(found[0].get("strResult"))
+                raw_result = found[0].get("strResult")
+                data.last_results = _split_results(raw_result)
+                fallback_standings = _split_standings_from_text(raw_result)
 
         try:
             data.rider_standings = await self._async_table(season)
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("No championship table for league %s: %s", self._league_id, err)
+
+        # TheSportsDB's free tier often has no lookuptable.php data for
+        # motorsport leagues - fall back to the standings recap embedded in
+        # the last event's strResult, if any.
+        if not data.rider_standings and fallback_standings:
+            data.rider_standings = fallback_standings
 
         return data
