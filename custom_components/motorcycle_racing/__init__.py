@@ -9,7 +9,14 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CARD_FILENAME, CARD_URL, CONF_REGISTER_CARD, DOMAIN, PLATFORMS
+from .const import (
+    CARD_FILENAME,
+    CARD_URL,
+    CARD_VERSION,
+    CONF_REGISTER_CARD,
+    DOMAIN,
+    PLATFORMS,
+)
 from .coordinator import RacingCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,7 +54,7 @@ async def _async_register_card(hass: HomeAssistant) -> None:
     try:
         from homeassistant.components.frontend import add_extra_js_url
 
-        add_extra_js_url(hass, f"{CARD_URL}?v={hass.data.get('integrations_version', '1')}")
+        add_extra_js_url(hass, f"{CARD_URL}?v={CARD_VERSION}")
     except Exception as err:  # noqa: BLE001 - never block setup over the card
         _LOGGER.debug("Could not auto-register the card as a resource: %s", err)
 

@@ -40,6 +40,13 @@ ATTRIBUTION_SPORTSDB: Final = "Data from TheSportsDB.com"
 CARD_URL: Final = f"/{DOMAIN}/motorcycle-racing-card.js"
 CARD_FILENAME: Final = "motorcycle-racing-card.js"
 
+# Bump this string whenever www/motorcycle-racing-card.js changes. It's the
+# only thing that busts the browser's cache of that file - HA always fetches
+# an ES module by its exact URL, so an unchanged "?v=" means a browser that
+# already loaded the card (even a broken/placeholder version, or a 404 from
+# before the file existed) will keep serving that cached copy forever.
+CARD_VERSION: Final = "3"
+
 # ---------------------------------------------------------------------------
 # Series catalogue
 #
