@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import urllib.parse
 from datetime import datetime, timezone
 from typing import Any
 
@@ -71,6 +72,35 @@ class RacingProvider:
                 if attempt == 1:
                     await asyncio.sleep(1.5)
         raise ProviderError(f"Failed to fetch {url}: {last_error}") from last_error
+
+
+async def fetch_wikipedia_thumbnail(session: aiohttp.ClientSession, title: str) -> str | None:
+    """Best-effort lookup of a Wikipedia page's lead image, for circuit layouts.
+
+    Used to give the dashboard card a "last circuit / next circuit" picture
+    without shipping (and having to keep fresh) our own image library. A
+    single attempt, no retries: a 404 here just means "no article by that
+    name", which is not worth the base client's retry-with-backoff treatment.
+    """
+    if not title:
+        return None
+    encoded = urllib.parse.quote(title.strip().replace(" ", "_"))
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded}"
+    try:
+        async with session.get(
+            url, headers=BROWSER_HEADERS, timeout=REQUEST_TIMEOUT
+        ) as resp:
+            if resp.status != 200:
+                return None
+            payload = await resp.json(content_type=None)
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as err:
+        _LOGGER.debug("Wikipedia lookup failed for %r: %s", title, err)
+        return None
+    if not isinstance(payload, dict):
+        return None
+    thumb = payload.get("thumbnail") or {}
+    original = payload.get("originalimage") or {}
+    return thumb.get("source") or original.get("source")
 
 
 def classify_session(name: str) -> str:

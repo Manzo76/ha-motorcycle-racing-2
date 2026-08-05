@@ -11,7 +11,15 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from .base import ProviderError, RacingProvider, classify_session, parse_dt, to_float, to_int
+from .base import (
+    ProviderError,
+    RacingProvider,
+    classify_session,
+    fetch_wikipedia_thumbnail,
+    parse_dt,
+    to_float,
+    to_int,
+)
 from .models import RaceEvent, ResultRow, SeriesData, Session, StandingRow
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,6 +63,7 @@ class MotoGPProvider(RacingProvider):
         self._season_uuid: str | None = None
         self._season_year: str | None = None
         self._category_uuid: str | None = None
+        self._circuit_image_cache: dict[str, str | None] = {}
 
     # -- discovery ---------------------------------------------------------
 
@@ -139,6 +148,18 @@ class MotoGPProvider(RacingProvider):
             finished=finished,
             poster=poster,
         )
+
+    async def _async_circuit_image(self, circuit: str | None) -> str | None:
+        """Look up a circuit layout picture for `circuit`, caching by name."""
+        if not circuit:
+            return None
+        key = circuit.strip().lower()
+        if key not in self._circuit_image_cache:
+            image = await fetch_wikipedia_thumbnail(self._session, f"{circuit} circuit")
+            if not image:
+                image = await fetch_wikipedia_thumbnail(self._session, circuit)
+            self._circuit_image_cache[key] = image
+        return self._circuit_image_cache[key]
 
     async def _async_sessions(self, event: RaceEvent) -> list[Session]:
         raw = await self._get_json(
@@ -282,6 +303,9 @@ class MotoGPProvider(RacingProvider):
         data.last_event = past[-1] if past else None
 
         if data.next_event:
+            data.next_event.circuit_map = await self._async_circuit_image(
+                data.next_event.circuit
+            )
             data.next_event.sessions = await self._async_sessions(data.next_event)
             for session in data.next_event.sessions:
                 if session.start and session.start >= now:
@@ -296,6 +320,9 @@ class MotoGPProvider(RacingProvider):
                     data.live_session = session
 
         if data.last_event:
+            data.last_event.circuit_map = await self._async_circuit_image(
+                data.last_event.circuit
+            )
             data.last_event.sessions = await self._async_sessions(data.last_event)
             race = data.last_event.race_session
             if race:

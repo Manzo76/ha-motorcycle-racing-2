@@ -1,12 +1,18 @@
-# Motorcycle Racing — example dashboard view
+# Motorcycle Racing — example dashboard
 #
-# Paste this into a YAML-mode dashboard, or use "Raw configuration editor" on a
-# storage dashboard. Entity ids assume a MotoGP entry and a WorldSBK entry; run
-# Developer Tools → States and filter on "motorcycle" if yours differ.
+# One tab per series, MotoGP first. Paste the `views:` list into a YAML-mode
+# dashboard, or use "Raw configuration editor" on a storage dashboard and
+# merge it into an existing dashboard's `views:`.
+#
+# Each tab uses the bundled `custom:motorcycle-racing-card`, which finds its
+# own entities from the `series:` key via the device registry — no need to
+# know the exact entity_ids. Add/remove a view block for whichever series you
+# have configured (Settings → Devices & services → Add integration →
+# Motorcycle Racing, once per series).
 
 views:
-  - title: Racing
-    path: racing
+  - title: MotoGP
+    path: motogp
     icon: mdi:motorbike
     type: sections
     max_columns: 3
@@ -15,15 +21,90 @@ views:
         cards:
           - type: custom:motorcycle-racing-card
             series: motogp
-            title: MotoGP
             standings_rows: 6
             results_rows: 6
 
       - type: grid
         cards:
+          - type: calendar
+            title: MotoGP calendar
+            initial_view: listWeek
+            entities:
+              - calendar.motogp
+
+  - title: Moto2
+    path: moto2
+    icon: mdi:motorbike
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: moto2
+            standings_rows: 6
+            results_rows: 6
+
+      - type: grid
+        cards:
+          - type: calendar
+            title: Moto2 calendar
+            initial_view: listWeek
+            entities:
+              - calendar.moto2
+
+  - title: Moto3
+    path: moto3
+    icon: mdi:motorbike
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: moto3
+            standings_rows: 6
+            results_rows: 6
+
+      - type: grid
+        cards:
+          - type: calendar
+            title: Moto3 calendar
+            initial_view: listWeek
+            entities:
+              - calendar.moto3
+
+  - title: MotoE
+    path: motoe
+    icon: mdi:lightning-bolt
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: motoe
+            standings_rows: 6
+            results_rows: 6
+
+      - type: grid
+        cards:
+          - type: calendar
+            title: MotoE calendar
+            initial_view: listWeek
+            entities:
+              - calendar.motoe
+
+  - title: WorldSBK
+    path: worldsbk
+    icon: mdi:motorbike
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
           - type: custom:motorcycle-racing-card
             series: worldsbk
-            title: WorldSBK
             accent: "#E4002B"
             standings_rows: 5
             results_rows: 5
@@ -31,49 +112,36 @@ views:
       - type: grid
         cards:
           - type: calendar
-            title: Race calendar
+            title: WorldSBK calendar
             initial_view: listWeek
             entities:
-              - calendar.motogp
               - calendar.worldsbk
 
-          - type: conditional
-            conditions:
-              - condition: state
-                entity: binary_sensor.motogp_race_weekend
-                state: "on"
-            card:
-              type: markdown
-              content: >-
-                ## 🏁 {{ state_attr('sensor.motogp_next_race', 'name') }}
+  - title: BSB
+    path: bsb
+    icon: mdi:motorbike
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: custom:motorcycle-racing-card
+            series: bsb
+            accent: "#00843D"
+            standings_rows: 5
+            results_rows: 5
 
-                **{{ state_attr('sensor.motogp_next_race', 'circuit') }}** ·
-                {{ state_attr('sensor.motogp_next_race', 'country') }}
-
-                Next up: **{{ states('sensor.motogp_next_session') }}** —
-                {{ relative_time(states.sensor.motogp_next_session_time.state | as_datetime) }}
-                {% set w = state_attr('sensor.motogp_next_session', 'weather') %}
-                {% if w %}
-
-                Track {{ w.track }} · Air {{ w.air }} · {{ w.weather }}
-                {% endif %}
-
-          - type: entities
-            title: Season
+      - type: grid
+        cards:
+          - type: calendar
+            title: British Superbikes calendar
+            initial_view: listWeek
             entities:
-              - entity: sensor.motogp_season_round
-                name: Rounds completed
-              - entity: sensor.motogp_rider_standings
-                name: Championship leader
-              - entity: sensor.motogp_team_standings
-                name: Leading team
-              - entity: sensor.motogp_last_race
-                name: Last winner
-              - entity: binary_sensor.motogp_race_day
-                name: Race day
+              - calendar.bsb
 
 # ---------------------------------------------------------------------------
-# Example automations — put these in automations.yaml
+# Example automations — put these in automations.yaml. Swap "motogp" for
+# whichever series you want to be notified about.
 # ---------------------------------------------------------------------------
 #
 # - alias: "MotoGP — lights out reminder"

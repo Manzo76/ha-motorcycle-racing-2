@@ -15,7 +15,14 @@ from typing import Any
 
 import aiohttp
 
-from .base import RacingProvider, classify_session, parse_dt, to_float, to_int
+from .base import (
+    RacingProvider,
+    classify_session,
+    fetch_wikipedia_thumbnail,
+    parse_dt,
+    to_float,
+    to_int,
+)
 from .models import RaceEvent, ResultRow, SeriesData, Session, StandingRow
 
 _LOGGER = logging.getLogger(__name__)
@@ -92,6 +99,7 @@ class SportsDBProvider(RacingProvider):
         self._series_key = series_key
         self._series_name = series_name
         self._api_key = api_key or "123"
+        self._circuit_image_cache: dict[str, str | None] = {}
 
     @property
     def _root(self) -> str:
@@ -158,6 +166,18 @@ class SportsDBProvider(RacingProvider):
             banner=item.get("strBanner") or item.get("strThumb"),
             circuit_map=item.get("strMap"),
         )
+
+    async def _async_circuit_image(self, circuit: str | None) -> str | None:
+        """Fall back to a Wikipedia lead image when TheSportsDB has no map."""
+        if not circuit:
+            return None
+        key = circuit.strip().lower()
+        if key not in self._circuit_image_cache:
+            image = await fetch_wikipedia_thumbnail(self._session, f"{circuit} circuit")
+            if not image:
+                image = await fetch_wikipedia_thumbnail(self._session, circuit)
+            self._circuit_image_cache[key] = image
+        return self._circuit_image_cache[key]
 
     async def _async_league_meta(self) -> dict[str, Any]:
         payload = await self._get_json(
@@ -243,6 +263,10 @@ class SportsDBProvider(RacingProvider):
         past = [e for e in ordered if (e.end or e.start or now) < now]
         data.next_event = upcoming[0] if upcoming else None
         data.last_event = past[-1] if past else None
+
+        for event in (data.next_event, data.last_event):
+            if event and not event.circuit_map:
+                event.circuit_map = await self._async_circuit_image(event.circuit)
 
         if data.next_event and data.next_event.sessions:
             session = data.next_event.sessions[0]

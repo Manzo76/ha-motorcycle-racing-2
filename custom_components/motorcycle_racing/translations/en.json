@@ -1,0 +1,68 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a racing series",
+        "description": "Pick the championship you want to follow. Add the integration again for each extra series.",
+        "data": {
+          "series": "Series"
+        }
+      },
+      "league": {
+        "title": "Pick a league",
+        "description": "These are the motorcycle championships available from TheSportsDB. Add your own API key if you have one, otherwise the shared free key is used.",
+        "data": {
+          "league_id": "League",
+          "api_key": "TheSportsDB API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the results service. Try again in a minute.",
+      "unknown": "Something unexpected went wrong. Check the logs for details."
+    },
+    "abort": {
+      "already_configured": "That series is already set up.",
+      "cannot_connect": "Could not reach the results service.",
+      "no_leagues": "No motorcycle leagues came back from the search."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Motorcycle Racing options",
+        "data": {
+          "favourite_rider": "Favourite rider",
+          "scan_interval": "Update every (minutes)",
+          "live_scan_interval": "Update every during a race weekend (minutes)",
+          "api_key": "TheSportsDB API key",
+          "register_card": "Serve the bundled dashboard card"
+        },
+        "data_description": {
+          "favourite_rider": "Adds a sensor tracking one rider's championship position. Leave blank to skip.",
+          "live_scan_interval": "Applies from four days before a round until the race finishes."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "next_race": { "name": "Next race" },
+      "next_session": { "name": "Next session" },
+      "next_session_time": { "name": "Next session time" },
+      "last_race": { "name": "Last race winner" },
+      "rider_standings": { "name": "Rider standings" },
+      "team_standings": { "name": "Team standings" },
+      "season_round": { "name": "Rounds completed" },
+      "favourite_rider": { "name": "Favourite rider position" }
+    },
+    "binary_sensor": {
+      "race_weekend": { "name": "Race weekend" },
+      "session_live": { "name": "Session live" },
+      "race_day": { "name": "Race day" }
+    },
+    "calendar": {
+      "calendar": { "name": "Calendar" }
+    }
+  }
+}

@@ -151,6 +151,7 @@ class LastRaceSensor(RacingEntity, SensorEntity):
             "podium": [row.as_dict() for row in results[:3]],
             "classification": [row.as_dict() for row in results],
             "poster": event.poster if event else None,
+            "circuit_map": event.circuit_map if event else None,
         }
         if results:
             attrs["winner"] = results[0].rider
