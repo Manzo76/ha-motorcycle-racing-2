@@ -23,6 +23,11 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # "brands" requires a merged PR against home-assistant/brands (a
+          # separate repo, reviewed by HA maintainers) - out of scope for
+          # this repo's own CI. "topics" is set on the GitHub repo itself,
+          # not in code, so it can't be fixed by a commit.
+          ignore: brands,topics
 
   python:
     name: Syntax
