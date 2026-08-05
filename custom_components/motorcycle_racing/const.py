@@ -45,7 +45,7 @@ CARD_FILENAME: Final = "motorcycle-racing-card.js"
 # an ES module by its exact URL, so an unchanged "?v=" means a browser that
 # already loaded the card (even a broken/placeholder version, or a 404 from
 # before the file existed) will keep serving that cached copy forever.
-CARD_VERSION: Final = "3"
+CARD_VERSION: Final = "4"
 
 # ---------------------------------------------------------------------------
 # Series catalogue
@@ -72,14 +72,14 @@ SERIES_CATALOGUE: Final[dict[str, dict]] = {
         "provider": PROVIDER_MOTOGP,
         "category_match": "moto2",
         "accent": "#0090D4",
-        "icon": "mdi:motorbike",
+        "icon": "mdi:numeric-2-circle",
     },
     "moto3": {
         "name": "Moto3",
         "provider": PROVIDER_MOTOGP,
         "category_match": "moto3",
         "accent": "#00A651",
-        "icon": "mdi:motorbike",
+        "icon": "mdi:numeric-3-circle",
     },
     "motoe": {
         "name": "MotoE",
@@ -93,14 +93,14 @@ SERIES_CATALOGUE: Final[dict[str, dict]] = {
         "provider": PROVIDER_SPORTSDB,
         "league_id": "4454",
         "accent": "#E4002B",
-        "icon": "mdi:motorbike",
+        "icon": "mdi:earth",
     },
     "bsb": {
         "name": "British Superbikes",
         "provider": PROVIDER_SPORTSDB,
         "league_id": "5264",
         "accent": "#00843D",
-        "icon": "mdi:motorbike",
+        "icon": "mdi:racing-helmet",
     },
     "custom": {
         "name": "Other series",

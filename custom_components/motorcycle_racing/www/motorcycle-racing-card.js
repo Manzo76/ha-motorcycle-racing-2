@@ -500,3 +500,242 @@ window.customCards.push({
   description:
     "Next round, last result, championship standings and a start-light countdown for a motorcycle racing series (MotoGP, Moto2, Moto3, MotoE, WorldSBK, BSB or custom).",
 });
+
+/**
+ * motorcycle-racing-tv-card
+ *
+ * Aggregates "next session" across every configured series' device and
+ * shows whichever is happening soonest, with the UK TV channel and the
+ * viewer's own local time (derived from the browser, so it's correct for
+ * whoever is looking at the dashboard).
+ *
+ * Minimal config:
+ *   type: custom:motorcycle-racing-tv-card
+ */
+
+// All UK live coverage sits on TNT Sports as of the 2025/2026 seasons
+// (Eurosport's UK output folded into TNT Sports' channels/streaming). Keyed
+// by device name (lowercased) so it degrades gracefully to a sensible
+// default if a series airs elsewhere in future.
+const TV_CHANNEL = {
+  motogp: "TNT Sports",
+  moto2: "TNT Sports",
+  moto3: "TNT Sports",
+  motoe: "TNT Sports",
+  worldsbk: "TNT Sports",
+  "british superbikes": "TNT Sports",
+};
+
+class MotorcycleTVCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._sessions = null;
+    this._resolving = null;
+    this._error = null;
+  }
+
+  setConfig(config) {
+    this._config = config || {};
+  }
+
+  getCardSize() {
+    return 5;
+  }
+
+  static getStubConfig() {
+    return {};
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._sessions && !this._resolving) {
+      this._resolving = this._resolve(hass).finally(() => {
+        this._resolving = null;
+      });
+    }
+    this._render();
+  }
+
+  async _resolve(hass) {
+    try {
+      const devices = await hass.callWS({ type: "config/device_registry/list" });
+      const ours = devices.filter((d) =>
+        (d.identifiers || []).some((pair) => pair[0] === "motorcycle_racing")
+      );
+      const entityRegistry = await hass.callWS({
+        type: "config/entity_registry/list",
+      });
+
+      const sessions = [];
+      for (const device of ours) {
+        const forDevice = entityRegistry.filter((e) => e.device_id === device.id);
+        const timeEntry = forDevice.find((e) =>
+          (e.unique_id || "").endsWith("_next_session_time")
+        );
+        if (!timeEntry) continue;
+        const timeState = hass.states[timeEntry.entity_id];
+        if (!timeState || !timeState.state) continue;
+        const start = new Date(timeState.state);
+        if (Number.isNaN(start.getTime())) continue;
+
+        const nameEntry = forDevice.find((e) =>
+          (e.unique_id || "").endsWith("_next_session")
+        );
+        const nameState = nameEntry ? hass.states[nameEntry.entity_id] : null;
+        const seriesName = device.name_by_user || device.name || "";
+        sessions.push({
+          series: seriesName,
+          session: nameState && nameState.state ? nameState.state : "Session",
+          start,
+          channel: TV_CHANNEL[seriesName.toLowerCase()] || "Check local listings",
+        });
+      }
+      sessions.sort((a, b) => a.start - b.start);
+      this._sessions = sessions;
+      this._error = null;
+    } catch (err) {
+      this._error = `Could not read the entity registry: ${err.message || err}`;
+    }
+    this._render();
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+    const title = this._config.title || "On TV (UK)";
+
+    if (this._error) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card><div class="card-content error">${esc(this._error)}</div></ha-card>`;
+      return;
+    }
+
+    if (!this._sessions) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card><div class="card-content">Loading ${esc(title)}…</div></ha-card>`;
+      return;
+    }
+
+    // Keep anything that started less than 30 minutes ago so a session that
+    // just went live doesn't disappear from "next up".
+    const cutoff = Date.now() - 30 * 60000;
+    const upcoming = this._sessions.filter((s) => s.start.getTime() >= cutoff);
+
+    if (!upcoming.length) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card>
+          <div class="header"><div class="title-row"><span class="title">${esc(title)}</span></div></div>
+          <div class="card-content"><div class="empty-row">Nothing scheduled</div></div>
+        </ha-card>`;
+      return;
+    }
+
+    const [next, ...rest] = upcoming;
+    const dateLocale = this._config.date_locale;
+    const nextTimeStr = next.start.toLocaleString(dateLocale || undefined, {
+      weekday: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let html = `
+      <ha-card>
+        <div class="header">
+          <div class="title-row">
+            <span class="dot"></span>
+            <span class="title">${esc(title)}</span>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="next-up">
+            <div class="next-series">${esc(next.series)}</div>
+            <div class="next-session">${esc(next.session)}</div>
+            <div class="next-meta">
+              <span class="next-time">${esc(nextTimeStr)} · ${esc(relative(next.start.toISOString()))}</span>
+              <span class="next-channel">${esc(next.channel)}</span>
+            </div>
+          </div>`;
+
+    if (rest.length) {
+      const rows = rest
+        .slice(0, 6)
+        .map(
+          (s) => `
+        <div class="upcoming-row">
+          <span class="upcoming-series">${esc(s.series)}</span>
+          <span class="upcoming-session">${esc(s.session)}</span>
+          <span class="upcoming-time">${esc(fmtTime(s.start.toISOString(), dateLocale))}</span>
+          <span class="upcoming-channel">${esc(s.channel)}</span>
+        </div>`
+        )
+        .join("");
+      html += `
+          <div class="section">
+            <div class="section-title">Also coming up</div>
+            <div class="upcoming-list">${rows}</div>
+          </div>`;
+    }
+
+    html += `</div></ha-card>`;
+    this.shadowRoot.innerHTML = `<style>${this._css()}</style>${html}`;
+  }
+
+  _css() {
+    return `
+      ha-card { overflow: hidden; }
+      .header { padding: 12px 16px 0 16px; }
+      .title-row { display: flex; align-items: center; gap: 8px; }
+      .dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: #D6001C; box-shadow: 0 0 6px #D6001C; flex-shrink: 0;
+      }
+      .title { font-size: 1.15em; font-weight: 600; }
+      .card-content { padding: 12px 16px 16px 16px; }
+      .error { color: var(--error-color, #db4437); }
+      .next-up {
+        background: var(--secondary-background-color, #f2f2f2);
+        border-radius: 10px; padding: 12px;
+      }
+      .next-series {
+        font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--secondary-text-color);
+      }
+      .next-session { font-size: 1.1em; font-weight: 700; margin-top: 2px; }
+      .next-meta {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 8px; gap: 8px; flex-wrap: wrap;
+      }
+      .next-time { font-size: 0.9em; color: var(--secondary-text-color); }
+      .next-channel {
+        font-size: 0.85em; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+        background: color-mix(in srgb, #D6001C 18%, transparent); color: #D6001C;
+      }
+      .section { margin-top: 14px; }
+      .section-title {
+        font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--secondary-text-color); margin-bottom: 6px; font-weight: 600;
+      }
+      .upcoming-list { display: flex; flex-direction: column; gap: 2px; }
+      .upcoming-row {
+        display: flex; align-items: center; gap: 8px; font-size: 0.85em;
+        padding: 4px 0; border-top: 1px solid var(--divider-color, #eee);
+      }
+      .upcoming-series { font-weight: 600; flex: 0 0 auto; min-width: 70px; }
+      .upcoming-session { color: var(--secondary-text-color); flex-grow: 1; }
+      .upcoming-time { color: var(--secondary-text-color); white-space: nowrap; }
+      .upcoming-channel { font-size: 0.8em; color: var(--secondary-text-color); white-space: nowrap; }
+      .empty-row { font-size: 0.85em; color: var(--secondary-text-color); }
+    `;
+  }
+}
+
+customElements.define("motorcycle-racing-tv-card", MotorcycleTVCard);
+window.customCards.push({
+  type: "motorcycle-racing-tv-card",
+  name: "Motorcycle Racing – On TV",
+  description:
+    "Shows the next motorcycle racing session on UK TV - series, session, local time and channel - across every configured series.",
+});
