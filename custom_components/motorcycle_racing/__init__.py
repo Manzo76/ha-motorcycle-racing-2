@@ -18,18 +18,31 @@ type RacingConfigEntry = ConfigEntry[RacingCoordinator]
 
 
 async def _async_register_card(hass: HomeAssistant) -> None:
-    """Serve the bundled Lovelace card and add it as a frontend resource."""
+    """Serve the bundled Lovelace card and add it as a frontend resource.
+
+    Every series' config entry calls this during startup, all roughly at
+    once. Claim the "already registered" flag *before* the first await so a
+    second entry sees it set and bails out instead of racing the first entry
+    to register the same static route (which raises RuntimeError from
+    aiohttp and, uncaught, used to fail that entry's entire setup).
+    """
     if hass.data.get(f"{DOMAIN}_card_registered"):
         return
+    hass.data[f"{DOMAIN}_card_registered"] = True
 
     card_path = Path(__file__).parent / "www" / CARD_FILENAME
     if not card_path.is_file():
         _LOGGER.warning("Bundled card %s is missing; skipping registration", card_path)
         return
 
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(CARD_URL, str(card_path), cache_headers=False)]
-    )
+    try:
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(CARD_URL, str(card_path), cache_headers=False)]
+        )
+    except RuntimeError as err:
+        # Another entry (or a previous reload) already registered the route.
+        _LOGGER.debug("Card route already registered: %s", err)
+        return
 
     try:
         from homeassistant.components.frontend import add_extra_js_url
@@ -38,14 +51,16 @@ async def _async_register_card(hass: HomeAssistant) -> None:
     except Exception as err:  # noqa: BLE001 - never block setup over the card
         _LOGGER.debug("Could not auto-register the card as a resource: %s", err)
 
-    hass.data[f"{DOMAIN}_card_registered"] = True
     _LOGGER.info("Motorcycle Racing card served at %s", CARD_URL)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: RacingConfigEntry) -> bool:
     """Set up one series from a config entry."""
     if entry.options.get(CONF_REGISTER_CARD, True):
-        await _async_register_card(hass)
+        try:
+            await _async_register_card(hass)
+        except Exception:  # noqa: BLE001 - the card is a nice-to-have, never block setup
+            _LOGGER.exception("Could not register the bundled dashboard card")
 
     coordinator = RacingCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
