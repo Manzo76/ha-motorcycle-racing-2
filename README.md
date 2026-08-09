@@ -8,7 +8,7 @@ weekend schedule, last race classification, championship standings and a
 calendar you can drop straight onto a dashboard. A custom Lovelace card ships
 with the integration and registers itself, so there is nothing extra to install.
 
-Pick your series when you add it — MotoGP, Moto2, Moto3, MotoE, WorldSBK,
+Pick your series when you add it — MotoGP, Moto2, Moto3, WorldSBK,
 British Superbikes, or anything else in TheSportsDB's motorcycle catalogue. Add
 the integration once per series you want to follow.
 
