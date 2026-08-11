@@ -45,7 +45,7 @@ CARD_FILENAME: Final = "motorcycle-racing-card.js"
 # an ES module by its exact URL, so an unchanged "?v=" means a browser that
 # already loaded the card (even a broken/placeholder version, or a 404 from
 # before the file existed) will keep serving that cached copy forever.
-CARD_VERSION: Final = "4"
+CARD_VERSION: Final = "5"
 
 # ---------------------------------------------------------------------------
 # Series catalogue
