@@ -55,6 +55,23 @@ function fmtTime(iso, locale) {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "GMT",
+    timeZoneName: "short",
+  });
+}
+
+function fmtDateTime(iso, locale) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(locale || undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "GMT",
+    timeZoneName: "short",
   });
 }
 
@@ -506,8 +523,7 @@ window.customCards.push({
  *
  * Aggregates "next session" across every configured series' device and
  * shows whichever is happening soonest, with the UK TV channel and the
- * viewer's own local time (derived from the browser, so it's correct for
- * whoever is looking at the dashboard).
+ * time shown in GMT, regardless of the viewer's own browser timezone.
  *
  * Minimal config:
  *   type: custom:motorcycle-racing-tv-card
@@ -639,6 +655,8 @@ class MotorcycleTVCard extends HTMLElement {
       weekday: "long",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "GMT",
+      timeZoneName: "short",
     });
 
     let html = `
@@ -738,4 +756,202 @@ window.customCards.push({
   name: "Motorcycle Racing – On TV",
   description:
     "Shows the next motorcycle racing session on UK TV - series, session, local time and channel - across every configured series.",
+});
+
+/**
+ * motorcycle-racing-schedule-card
+ *
+ * Season calendar for one series, sourced straight from its calendar
+ * entity (calendar.<series>). Only ever asks for events from "now" onward
+ * so finished rounds never appear, and every time is rendered in fixed
+ * GMT (no DST drift), matching motorcycle-racing-card and
+ * motorcycle-racing-tv-card.
+ *
+ * Minimal config:
+ *   type: custom:motorcycle-racing-schedule-card
+ *   series: motogp
+ */
+
+class MotorcycleScheduleCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._events = null;
+    this._error = null;
+    this._entityId = null;
+    this._resolving = null;
+  }
+
+  setConfig(config) {
+    if (!config || (!config.series && !config.entity)) {
+      throw new Error("motorcycle-racing-schedule-card: set either 'series' or 'entity'");
+    }
+    this._config = config;
+    this._entityId = null;
+    this._events = null;
+    this._error = null;
+  }
+
+  getCardSize() {
+    return 4;
+  }
+
+  static getStubConfig() {
+    return { series: "motogp" };
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (!this._entityId && !this._resolving) {
+      this._resolving = this._resolve(hass).finally(() => {
+        this._resolving = null;
+      });
+    }
+    this._render();
+  }
+
+  async _resolveEntity(hass) {
+    const config = this._config;
+    if (config.entity) return config.entity;
+    const meta = SERIES_META[config.series];
+    const wanted = (meta ? meta.name : config.series).toLowerCase();
+    const devices = await hass.callWS({ type: "config/device_registry/list" });
+    const match = devices.find((d) => {
+      const isOurs = (d.identifiers || []).some(
+        (pair) => pair[0] === "motorcycle_racing"
+      );
+      const name = (d.name_by_user || d.name || "").toLowerCase();
+      return isOurs && name === wanted;
+    });
+    if (!match) return null;
+    const entityRegistry = await hass.callWS({
+      type: "config/entity_registry/list",
+    });
+    const entry = entityRegistry.find(
+      (e) => e.device_id === match.id && (e.unique_id || "").endsWith("_calendar")
+    );
+    return entry ? entry.entity_id : null;
+  }
+
+  async _resolve(hass) {
+    try {
+      const entityId = await this._resolveEntity(hass);
+      if (!entityId) {
+        this._error = `No calendar found for ${this._config.entity || this._config.series}`;
+        this._entityId = null;
+        this._render();
+        return;
+      }
+      this._entityId = entityId;
+      await this._fetchEvents(hass);
+    } catch (err) {
+      this._error = `Could not resolve calendar: ${err.message || err}`;
+      this._render();
+    }
+  }
+
+  async _fetchEvents(hass) {
+    // Asking the calendar API for events starting at "now" is what keeps
+    // finished rounds out of this card - there's no client-side filtering
+    // to get wrong later.
+    const now = new Date();
+    const end = new Date(now.getTime() + (this._config.days_ahead || 120) * 86400000);
+    const path = `calendars/${this._entityId}?start=${encodeURIComponent(
+      now.toISOString()
+    )}&end=${encodeURIComponent(end.toISOString())}`;
+    const events = await hass.callApi("GET", path);
+    this._events = (events || [])
+      .filter((e) => e.start && (e.start.dateTime || e.start.date))
+      .sort(
+        (a, b) =>
+          new Date(a.start.dateTime || a.start.date) -
+          new Date(b.start.dateTime || b.start.date)
+      );
+    this._error = null;
+    this._render();
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+    const title = this._config.title || "Season calendar";
+
+    if (this._error) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card><div class="card-content error">${esc(this._error)}</div></ha-card>`;
+      return;
+    }
+
+    if (!this._events) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card><div class="card-content">Loading ${esc(title)}…</div></ha-card>`;
+      return;
+    }
+
+    if (!this._events.length) {
+      this.shadowRoot.innerHTML = `
+        <style>${this._css()}</style>
+        <ha-card>
+          <div class="header"><div class="title-row"><span class="title">${esc(title)}</span></div></div>
+          <div class="card-content"><div class="empty-row">No upcoming sessions scheduled</div></div>
+        </ha-card>`;
+      return;
+    }
+
+    const limit = this._config.limit || 12;
+    const dateLocale = this._config.date_locale;
+    const rows = this._events
+      .slice(0, limit)
+      .map((e) => {
+        const iso = e.start.dateTime || e.start.date;
+        return `
+          <div class="sched-row">
+            <div class="sched-time">${esc(fmtDateTime(iso, dateLocale))}</div>
+            <div class="sched-body">
+              <div class="sched-summary">${esc(e.summary || "")}</div>
+              ${e.location ? `<div class="sched-location">${esc(e.location)}</div>` : ""}
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    this.shadowRoot.innerHTML = `
+      <style>${this._css()}</style>
+      <ha-card>
+        <div class="header"><div class="title-row"><span class="title">${esc(title)}</span></div></div>
+        <div class="card-content">${rows}</div>
+      </ha-card>`;
+  }
+
+  _css() {
+    return `
+      ha-card { overflow: hidden; }
+      .header { padding: 12px 16px 0 16px; }
+      .title-row { display: flex; align-items: center; gap: 8px; }
+      .title { font-size: 1.15em; font-weight: 600; }
+      .card-content { padding: 10px 16px 14px 16px; }
+      .error { color: var(--error-color, #db4437); }
+      .sched-row {
+        display: flex; gap: 12px; align-items: flex-start;
+        padding: 6px 0; border-top: 1px solid var(--divider-color, #eee);
+      }
+      .sched-row:first-child { border-top: none; }
+      .sched-time {
+        flex: 0 0 auto; min-width: 108px; font-size: 0.82em;
+        color: var(--secondary-text-color); font-variant-numeric: tabular-nums;
+      }
+      .sched-summary { font-size: 0.9em; font-weight: 500; }
+      .sched-location { font-size: 0.78em; color: var(--secondary-text-color); }
+      .empty-row { font-size: 0.85em; color: var(--secondary-text-color); }
+    `;
+  }
+}
+
+customElements.define("motorcycle-racing-schedule-card", MotorcycleScheduleCard);
+window.customCards.push({
+  type: "motorcycle-racing-schedule-card",
+  name: "Motorcycle Racing – Season calendar",
+  description:
+    "Remaining sessions of the season for one series, sourced from its calendar entity. GMT times only, future rounds only.",
 });
