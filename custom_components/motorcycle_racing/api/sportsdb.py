@@ -380,10 +380,25 @@ class SportsDBProvider(RacingProvider):
                 data.last_results = _split_results(raw_result)
                 fallback_standings = _split_standings_from_text(raw_result)
 
+        # TheSportsDB's "current season" label can lag by years (British
+        # Superbikes still said 2024 in late 2026). When the newest race is from
+        # a later year the label and its championship table are stale: show the
+        # real year and use the standings recap from the latest race instead.
+        stale = False
+        latest_year = data.last_event.start.year if data.last_event and data.last_event.start else None
         try:
-            data.rider_standings = await self._async_table(season)
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("No championship table for league %s: %s", self._league_id, err)
+            if latest_year and season and int(season) < latest_year:
+                stale = True
+                data.season = str(latest_year)
+                data.events = [e for e in data.events if e.start and e.start.year >= latest_year]
+        except (TypeError, ValueError):
+            pass
+
+        if not stale:
+            try:
+                data.rider_standings = await self._async_table(season)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("No championship table for league %s: %s", self._league_id, err)
 
         # TheSportsDB's free tier often has no lookuptable.php data for
         # motorsport leagues - fall back to the standings recap embedded in
