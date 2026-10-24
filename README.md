@@ -12,6 +12,15 @@ Pick your series when you add it — MotoGP, Moto2, Moto3, WorldSBK,
 British Superbikes, or anything else in TheSportsDB's motorcycle catalogue. Add
 the integration once per series you want to follow.
 
+## Screenshots
+
+A sidebar dashboard with a tab for every class (live data, sample from the 2026 Australian GP weekend):
+
+<p>
+  <img src="docs/overview.jpg" alt="Overview tab: latest sprint and last race results" width="49%">
+  <img src="docs/tables.jpg" alt="Tables tab: MotoGP 2026 rider standings" width="49%">
+</p>
+
 ---
 
 ## Install
