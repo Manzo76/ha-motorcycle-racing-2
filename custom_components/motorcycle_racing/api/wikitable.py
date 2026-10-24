@@ -68,7 +68,7 @@ class _TableParser(HTMLParser):
             if self._cell.link == self._a_link:
                 self._cell.link = None
         elif tag == "br" and self._cell is not None:
-            self._parts.append(" ")
+            self._parts.append(" | ")
 
     def handle_endtag(self, tag):
         if tag in ("style", "script", "sup"):
@@ -215,6 +215,8 @@ def parse_entry_list(html: str) -> list[Entry]:
             if norm(rider) in _NOT_RIDERS:
                 continue
             team_cell = row[idx["team"]]
+            # Some teams list two names separated by a line break: use the first.
+            team_name = team_cell.text.split(" | ")[0].strip()
 
             def get(key):
                 i = idx.get(key)
@@ -222,7 +224,7 @@ def parse_entry_list(html: str) -> list[Entry]:
 
             entries.append(
                 Entry(
-                    team=team_cell.text,
+                    team=team_name,
                     team_title=team_cell.link,
                     constructor=get("constructor"),
                     bike=get("bike"),

@@ -513,7 +513,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         const g = group(x.key);
         const channels = (d.channels || {})[g] || (d.fallback || {})[g] || [];
         const direct = !!(d.channels || {})[g];
-        const ev = x.live ? null : x.next_event;
+        const ev = x.next_event;
         const sessions = ev
           ? (ev.sessions || []).filter((se) => se.start && new Date(se.start) > new Date(Date.now() - 3600000)).slice(0, 8)
           : [];
@@ -523,6 +523,7 @@ class MotorcycleRacingPanel extends HTMLElement {
               .join("")}</tbody></table>`
           : `<p class="muted">${x.season_over ? "Season complete." : "Session times appear closer to the race weekend."}</p>`;
         return `<section class="card"><h3>${esc(x.name)}${ev ? ` <small class="muted">${esc(ev.name)}</small>` : ""}</h3>
+          ${x.live ? `<p><span class="dot"></span><b>${esc(x.live.name)} is live now</b></p>` : ""}
           <div class="chan">${channels.length ? channels.map((c) => `<span class="chip">${esc(c)}</span>`).join("") : `<span class="muted">No listing</span>`}</div>
           ${direct || !channels.length ? "" : `<p class="muted small">No local broadcaster listed for ${esc(d.country || "your country")}; this is the global option.</p>`}
           ${when}</section>`;
@@ -647,7 +648,7 @@ class MotorcycleRacingPanel extends HTMLElement {
           <a href="${PANEL_REPO}" target="_blank" rel="noopener">&#9733; Star us on GitHub</a>
           <button data-act="share">Share with friends</button>
           <a href="${PANEL_REPO}/issues" target="_blank" rel="noopener">Report a problem</a>
-          <span class="credit">Background photo: CC0 / public domain, <a href="${BG_PAGE}" target="_blank" rel="noopener">Wikimedia Commons</a>. ${esc((s && s.attribution) || "")} Not affiliated with any championship.</span>
+          <span class="credit">Background photo: CC0 / public domain, <a href="${BG_PAGE}" target="_blank" rel="noopener">Wikimedia Commons</a>. ${esc((s && s.attribution) || "")}${s && /not affiliated/i.test(s.attribution || "") ? "" : " Not affiliated with any championship."}</span>
         </footer>
       </div>`;
     root.onclick = (ev) => this._click(ev);

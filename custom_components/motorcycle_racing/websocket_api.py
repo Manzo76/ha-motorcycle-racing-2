@@ -14,6 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import SeriesData
 from .api.extras import Extras
 from .api.models import RaceEvent
+from .api.wikitable import norm
 from .const import DOMAIN
 from .coordinator import RacingCoordinator
 
@@ -188,17 +189,17 @@ async def ws_teams(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
     coordinator = _coordinators(hass).get(series)
     data = coordinator.data if coordinator else None
     if data:
-        riders = {r.name: r for r in data.rider_standings}
+        riders = {norm(r.name): r for r in data.rider_standings}
         # Attach this season's points/position to each rider and team.
         for team in teams:
             for rider in team["riders"]:
-                row = riders.get(rider["name"])
+                row = riders.get(norm(rider["name"]))
                 if row:
                     rider["points"] = row.points
                     rider["position"] = row.position
-        position = {t.name: t for t in data.team_standings}
+        position = {norm(t.name): t for t in data.team_standings}
         for team in teams:
-            row = position.get(team["name"])
+            row = position.get(norm(team["name"]))
             if row:
                 team["points"] = row.points
                 team["position"] = row.position
@@ -211,7 +212,7 @@ async def ws_teams(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None
                         {"name": r.name, "number": r.number, "points": r.points, "position": r.position}
                     )
             for name, members in grouped.items():
-                row = position.get(name)
+                row = position.get(norm(name))
                 teams.append(
                     {"name": name, "title": None, "constructor": None, "bike": None,
                      "riders": members, "points": row.points if row else None,

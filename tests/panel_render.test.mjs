@@ -121,6 +121,12 @@ assert.match(html, /TNT Sports/, "channels");
 assert.match(html, /United Kingdom/, "country picker");
 assert.match(html, /Wrong channel\?/, "feedback link");
 assert.match(html, /Race/, "upcoming session listed");
+series[0].live = { name: "Sprint" };
+p._render();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /Sprint is live now/, "live note on TV guide");
+assert.match(html, /<td>Race<\/td>/, "sessions still listed while a session is live");
+series[0].live = null;
 p.shadowRoot.onchange({ target: { dataset: { act: "pick-country" }, value: "US" } });
 assert.equal(p._country, "US", "country remembered");
 

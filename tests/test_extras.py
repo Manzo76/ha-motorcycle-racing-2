@@ -184,7 +184,7 @@ check("real: TBA number kept as text", [e.number for e in real if e.rider == "Da
 check("real: accents", [e.rider for e in real if "Fern" in e.rider], ["Ra\u00fal Fern\u00e1ndez"])
 check("real: rider link with parentheses", [e.rider_title for e in real if "Fern" in e.rider], ["Ra\u00fal Fern\u00e1ndez (motorcyclist)"])
 check("real: nested spans", [e.rider for e in real if "Giannantonio" in e.rider], ["Fabio Di Giannantonio"])
-check("real: two-name team cell", [e.team for e in real if e.rider == "Johann Zarco"], ["Castrol Honda LCR Pro Honda LCR"])
+check("real: two-name team cell uses the first", [e.team for e in real if e.rider == "Johann Zarco"], ["Castrol Honda LCR"])
 check("real: no citation text", any("[" in e.rider for e in real), False)
 
 if failures:
