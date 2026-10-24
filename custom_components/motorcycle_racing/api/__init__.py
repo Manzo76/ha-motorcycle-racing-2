@@ -15,18 +15,21 @@ from ..const import (
 )
 from .base import AuthError, ProviderError, RacingProvider
 from .models import (
+    ChampionRow,
     RaceEvent,
     ResultRow,
     SeriesData,
     Session,
     StandingRow,
     apply_season_state,
+    compose_champions,
 )
 from .motogp import MotoGPProvider
 from .sportsdb import SportsDBProvider
 
 __all__ = [
     "AuthError",
+    "ChampionRow",
     "ProviderError",
     "RaceEvent",
     "RacingProvider",
@@ -37,6 +40,7 @@ __all__ = [
     "StandingRow",
     "apply_season_state",
     "build_provider",
+    "compose_champions",
 ]
 
 

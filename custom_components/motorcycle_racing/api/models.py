@@ -142,6 +142,48 @@ class StandingRow:
 
 
 @dataclass(slots=True)
+class ChampionRow:
+    """The rider (and optionally team) that won one season's championship."""
+
+    season: str
+    rider: str
+    team: str | None = None
+    constructor: str | None = None
+    points: float | None = None
+    number: int | None = None
+    team_champion: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "season": self.season,
+            "rider": self.rider,
+            "team": self.team,
+            "constructor": self.constructor,
+            "points": self.points,
+            "number": self.number,
+            "team_champion": self.team_champion,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> "ChampionRow | None":
+        season = str(raw.get("season") or "").strip()
+        rider = (raw.get("rider") or "").strip()
+        if not season or not rider:
+            return None
+        points = raw.get("points")
+        number = raw.get("number")
+        return cls(
+            season=season,
+            rider=rider,
+            team=raw.get("team") or None,
+            constructor=raw.get("constructor") or None,
+            points=float(points) if isinstance(points, (int, float)) else None,
+            number=int(number) if isinstance(number, (int, float)) else None,
+            team_champion=raw.get("team_champion") or None,
+        )
+
+
+@dataclass(slots=True)
 class SeriesData:
     """Everything the coordinator knows about one series right now."""
 
@@ -166,6 +208,8 @@ class SeriesData:
     next_season_event: RaceEvent | None = None
     champion_rider: StandingRow | None = None
     champion_team: StandingRow | None = None
+    # Past champions, newest season first. Filled by the coordinator.
+    champions: list[ChampionRow] = field(default_factory=list)
 
 
 # A gap this long between the last round raced and the next one on the calendar
@@ -224,3 +268,35 @@ def apply_season_state(data: SeriesData, now: datetime) -> SeriesData:
     if data.team_standings:
         data.champion_team = data.team_standings[0]
     return data
+
+
+def compose_champions(
+    history: list[ChampionRow], data: SeriesData, limit: int = 25
+) -> list[ChampionRow]:
+    """Merge stored history with this season's champion, newest season first.
+
+    Once a season is complete its champion is known from the live standings
+    before any history source has caught up, so add it (keyed by the year the
+    final round was raced) unless the history already has that season.
+    """
+    rows: dict[str, ChampionRow] = {row.season: row for row in history}
+    champion = data.champion_rider
+    last = data.last_event
+    if data.season_over and champion and last and last.start:
+        season = str(last.start.year)
+        if season not in rows:
+            rows[season] = ChampionRow(
+                season=season,
+                rider=champion.name,
+                team=champion.team,
+                constructor=champion.constructor,
+                points=champion.points,
+                number=champion.number,
+                team_champion=data.champion_team.name if data.champion_team else None,
+            )
+
+    def _key(row: ChampionRow) -> int:
+        digits = "".join(ch for ch in row.season[:4] if ch.isdigit())
+        return int(digits) if digits else 0
+
+    return sorted(rows.values(), key=_key, reverse=True)[:limit]

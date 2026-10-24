@@ -20,7 +20,7 @@ from .base import (
     to_float,
     to_int,
 )
-from .models import RaceEvent, ResultRow, SeriesData, Session, StandingRow
+from .models import ChampionRow, RaceEvent, ResultRow, SeriesData, Session, StandingRow
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -235,10 +235,15 @@ class MotoGPProvider(RacingProvider):
         results.sort(key=lambda r: r.position if r.position is not None else 999)
         return results
 
-    async def _async_standings(self) -> tuple[list[StandingRow], list[StandingRow]]:
+    async def _async_standings(
+        self, season_uuid: str | None = None, category_uuid: str | None = None
+    ) -> tuple[list[StandingRow], list[StandingRow]]:
         raw = await self._get_json(
             f"{BASE}/results/standings",
-            {"seasonUuid": self._season_uuid, "categoryUuid": self._category_uuid},
+            {
+                "seasonUuid": season_uuid or self._season_uuid,
+                "categoryUuid": category_uuid or self._category_uuid,
+            },
         )
         rows = (raw or {}).get("classification") if isinstance(raw, dict) else None
         if not isinstance(rows, list):
@@ -277,6 +282,57 @@ class MotoGPProvider(RacingProvider):
             )
         ]
         return riders, teams
+
+    # -- champion history --------------------------------------------------
+
+    async def async_list_past_seasons(self, limit: int) -> list[tuple[str, str]]:
+        """Return up to ``limit`` finished seasons as (year, season uuid), newest first."""
+        if not self._season_uuid:
+            await self._async_resolve_season()
+        seasons = await self._get_json(f"{BASE}/results/seasons")
+        if not isinstance(seasons, list):
+            return []
+        past: list[tuple[int, str]] = []
+        for item in seasons:
+            year = to_int(item.get("year"))
+            uuid = item.get("id")
+            if year is None or not uuid or uuid == self._season_uuid:
+                continue
+            if item.get("current") in (True, 1, "1", "true", "True"):
+                continue
+            past.append((year, uuid))
+        past.sort(reverse=True)
+        return [(str(year), uuid) for year, uuid in past[:limit]]
+
+    async def async_get_champion(self, year: str, season_uuid: str) -> ChampionRow | None:
+        """Champion of one past season in this class, or None if the class did not run."""
+        cats = await self._get_json(
+            f"{BASE}/results/categories", {"seasonUuid": season_uuid}
+        )
+        if not isinstance(cats, list):
+            return None
+        wanted = self._category_match.lower()
+        category_uuid = None
+        for cat in cats:
+            name = (cat.get("name") or "").lower().replace("™", "").strip()
+            if name.replace(" ", "") == wanted or wanted in name:
+                category_uuid = cat.get("id")
+                break
+        if not category_uuid:
+            return None
+        riders, teams = await self._async_standings(season_uuid, category_uuid)
+        if not riders:
+            return None
+        top = riders[0]
+        return ChampionRow(
+            season=year,
+            rider=top.name,
+            team=top.team,
+            constructor=top.constructor,
+            points=top.points,
+            number=top.number,
+            team_champion=teams[0].name if teams else None,
+        )
 
     # -- entry point -------------------------------------------------------
 

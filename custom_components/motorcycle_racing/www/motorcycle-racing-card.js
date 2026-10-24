@@ -318,6 +318,32 @@ class MotorcycleRacingCard extends HTMLElement {
       </div>`;
   }
 
+  _renderChampionHistory(rows, limit) {
+    if (!rows || !rows.length) return "";
+    const shown = rows.slice(0, limit || 5);
+    // Only add a team-title column when the data actually has one.
+    const showTitle = shown.some((r) => r.team_champion);
+    const body = shown
+      .map(
+        (r, i) => `
+        <tr class="${i === 0 ? "champ-row" : ""}">
+          <td class="pos">${esc(r.season)}</td>
+          <td class="name">${r.number != null ? `<span class="hnum">#${esc(r.number)}</span>` : ""}${esc(r.rider)}</td>
+          <td class="team">${esc(r.team || r.constructor || "")}</td>
+          ${showTitle ? `<td class="team">${esc(r.team_champion || "")}</td>` : ""}
+        </tr>`
+      )
+      .join("");
+    return `
+      <div class="section">
+        <div class="section-title">Past champions</div>
+        <table class="results history">
+          <thead><tr><th>Year</th><th>Rider</th><th>Team</th>${showTitle ? "<th>Team title</th>" : ""}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+  }
+
   _renderPodium(podium, ctx) {
     if (!podium || !podium.length) return "";
     const byPos = {};
@@ -584,6 +610,13 @@ class MotorcycleRacingCard extends HTMLElement {
       }
     }
 
+    if (config.show_history !== false && riderStandings) {
+      html += this._renderChampionHistory(
+        riderStandings.attributes.champions_history,
+        config.history_rows
+      );
+    }
+
     html += `</div></ha-card>`;
     this.shadowRoot.innerHTML = `<style>${this._css(accent)}</style>${html}`;
 
@@ -724,6 +757,8 @@ class MotorcycleRacingCard extends HTMLElement {
       .champ-meta { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 1px; }
       .champ-team { font-size: 0.82em; margin-top: 6px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
       .champ-team ha-icon { --mdc-icon-size: 16px; color: var(--accent); }
+      .hnum { color: var(--accent); font-weight: 700; margin-right: 5px; }
+      table.history td.pos { width: 3em; }
       tr.champ-row td { font-weight: 700; }
       tr.champ-row td.pos { color: #e6b800; }
 

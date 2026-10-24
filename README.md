@@ -104,6 +104,8 @@ through the device. Everything else is optional:
 | `show_standings` | true | Championship table |
 | `show_podium` | true | Gold/silver/bronze podium for the last race |
 | `show_icon` | true | The brand icon in the card header |
+| `show_history` | true | Past champions table, newest season first |
+| `history_rows` | 5 | How many past seasons to list |
 | `time_zone` | `local` | `local` (your device / HA profile), `server`, any IANA zone such as `Europe/London`, or `GMT` |
 | `date_locale` | HA language | Locale used to format dates, e.g. `en-GB` |
 
@@ -114,6 +116,15 @@ card to a fixed zone.
 
 **Live sessions.** While a session is running the card shows a LIVE banner and
 the start lights go green.
+
+**Past champions.** Each class lists its previous riders' champions with their
+team, newest season first (the season that has just finished goes straight on
+top). MotoGP, Moto2, Moto3 and MotoE history is read once from the official
+results feed, saved to disk, and only topped up when a new season starts.
+WorldSBK and British Superbikes have no free results feed, so their history
+ships with the integration (`data/champions.json`, from Wikipedia) and each new
+champion is added automatically from the live standings when the season ends.
+The full list is on the standings sensor as `champions_history`.
 
 **Season complete.** When a series has run its final round, "Next race" reads
 *Season complete* instead of counting down to next year's opener. The card shows

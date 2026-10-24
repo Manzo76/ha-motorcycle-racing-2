@@ -30,6 +30,11 @@ DEFAULT_LIVE_SCAN_INTERVAL: Final = timedelta(minutes=2)
 # Supporters get a personal key from https://www.thesportsdb.com/
 DEFAULT_SPORTSDB_KEY: Final = "123"
 
+# How many past seasons of champions to keep, and the pause between the
+# one-off history requests so we never hammer the upstream APIs.
+HISTORY_YEARS: Final = 12
+HISTORY_REQUEST_DELAY: Final = 1.0
+
 # A race weekend is treated as "active" this many hours either side of a session.
 RACE_WEEKEND_WINDOW_HOURS: Final = 96
 SESSION_LIVE_MINUTES: Final = 90
@@ -45,7 +50,7 @@ CARD_FILENAME: Final = "motorcycle-racing-card.js"
 # an ES module by its exact URL, so an unchanged "?v=" means a browser that
 # already loaded the card (even a broken/placeholder version, or a 404 from
 # before the file existed) will keep serving that cached copy forever.
-CARD_VERSION: Final = "6"
+CARD_VERSION: Final = "7"
 
 # ---------------------------------------------------------------------------
 # Series catalogue

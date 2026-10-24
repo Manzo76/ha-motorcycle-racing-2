@@ -175,4 +175,52 @@ html = await mount({
 }, { series: "bsb", time_zone: "Not/AZone" });
 assert.match(html, /Oulton Park/, "bad zone falls back");
 
+// 6. Past champions history, newest season first.
+const history = [
+  { season: "2025", rider: "Marc Márquez", number: 93, team: "Ducati Lenovo Team", team_champion: "Ducati Lenovo Team" },
+  { season: "2024", rider: "Jorge Martín", number: 89, team: "Prima Pramac Racing", team_champion: "Ducati Lenovo Team" },
+  { season: "2023", rider: "Francesco Bagnaia", team: "Ducati Lenovo Team", team_champion: "Ducati Lenovo Team" },
+];
+const histBase = {
+  "sensor.bsb_next_race": { state: "Oulton Park", attributes: { season_over: false, sessions: [] } },
+  "sensor.bsb_last_race": base["sensor.bsb_last_race"],
+};
+html = await mount({
+  ...histBase,
+  "sensor.bsb_rider_standings": { state: "x", attributes: { standings, season: "2026", champions_history: history } },
+});
+assert.match(html, /Past champions/, "history heading");
+assert.ok(html.indexOf("2025") < html.indexOf("2024"), "2025 above 2024");
+assert.ok(html.indexOf("2024") < html.indexOf("2023"), "2024 above 2023");
+assert.match(html, /Team title/, "team title column when data has it");
+assert.match(html, /Marc Márquez/, "rider shown");
+
+html = await mount({
+  ...histBase,
+  "sensor.bsb_rider_standings": { state: "x", attributes: { standings, season: "2026", champions_history: history } },
+}, { series: "bsb", history_rows: 2 });
+assert.doesNotMatch(html, /Francesco Bagnaia/, "history_rows limits rows");
+
+html = await mount({
+  ...histBase,
+  "sensor.bsb_rider_standings": {
+    state: "x",
+    attributes: { standings, season: "2026", champions_history: [{ season: "2025", rider: "Kyle Ryde", team: "Nitrous Competitions Racing Yamaha" }] },
+  },
+});
+assert.match(html, /Nitrous Competitions Racing Yamaha/, "static series team shown");
+assert.doesNotMatch(html, /Team title/, "no team title column without data");
+
+html = await mount({
+  ...histBase,
+  "sensor.bsb_rider_standings": { state: "x", attributes: { standings, season: "2026", champions_history: [] } },
+});
+assert.doesNotMatch(html, /Past champions/, "hidden while history is still loading");
+
+html = await mount({
+  ...histBase,
+  "sensor.bsb_rider_standings": { state: "x", attributes: { standings, season: "2026", champions_history: history } },
+}, { series: "bsb", show_history: false });
+assert.doesNotMatch(html, /Past champions/, "show_history false hides it");
+
 console.log("Card render checks passed.");

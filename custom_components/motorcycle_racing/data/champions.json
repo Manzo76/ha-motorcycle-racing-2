@@ -1,0 +1,145 @@
+{
+ "_comment": "Past riders' champions for series without a free results API. Newest season is appended automatically from live standings when a season finishes; add earlier/newer rows here if needed.",
+ "_sources": [
+  "https://en.wikipedia.org/wiki/List_of_Superbike_World_Champions",
+  "https://en.wikipedia.org/wiki/2025_Superbike_World_Championship",
+  "https://en.wikipedia.org/wiki/British_Superbike_Championship"
+ ],
+ "_retrieved": "2026-10-24",
+ "worldsbk": [
+  {
+   "season": "2025",
+   "rider": "Toprak Razgatlıoğlu",
+   "team": "Rokit BMW Motorrad",
+   "constructor": "BMW"
+  },
+  {
+   "season": "2024",
+   "rider": "Toprak Razgatlıoğlu",
+   "team": "Rokit BMW Motorrad",
+   "constructor": "BMW"
+  },
+  {
+   "season": "2023",
+   "rider": "Álvaro Bautista",
+   "team": "Aruba.it Racing – Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2022",
+   "rider": "Álvaro Bautista",
+   "team": "Aruba.it Racing – Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2021",
+   "rider": "Toprak Razgatlıoğlu",
+   "team": "Pata Yamaha with Brixx WorldSBK",
+   "constructor": "Yamaha"
+  },
+  {
+   "season": "2020",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team WorldSBK",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2019",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team WorldSBK",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2018",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2017",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2016",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2015",
+   "rider": "Jonathan Rea",
+   "team": "Kawasaki Racing Team",
+   "constructor": "Kawasaki"
+  }
+ ],
+ "bsb": [
+  {
+   "season": "2025",
+   "rider": "Kyle Ryde",
+   "team": "Nitrous Competitions Racing Yamaha",
+   "constructor": "Yamaha"
+  },
+  {
+   "season": "2024",
+   "rider": "Kyle Ryde",
+   "team": "OMG Racing Yamaha",
+   "constructor": "Yamaha"
+  },
+  {
+   "season": "2023",
+   "rider": "Tommy Bridewell",
+   "team": "BeerMonster Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2022",
+   "rider": "Bradley Ray",
+   "team": "Rich Energy OMG Yamaha",
+   "constructor": "Yamaha"
+  },
+  {
+   "season": "2021",
+   "rider": "Tarran Mackenzie",
+   "team": "McAMS Yamaha",
+   "constructor": "Yamaha"
+  },
+  {
+   "season": "2020",
+   "rider": "Josh Brookes",
+   "team": "VisionTrack Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2019",
+   "rider": "Scott Redding",
+   "team": "Be Wiser Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2018",
+   "rider": "Leon Haslam",
+   "team": "JG Speedfit Kawasaki",
+   "constructor": "Kawasaki"
+  },
+  {
+   "season": "2017",
+   "rider": "Shane Byrne",
+   "team": "Be Wiser Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2016",
+   "rider": "Shane Byrne",
+   "team": "Be Wiser Ducati",
+   "constructor": "Ducati"
+  },
+  {
+   "season": "2015",
+   "rider": "Josh Brookes",
+   "team": "Milwaukee Yamaha",
+   "constructor": "Yamaha"
+  }
+ ]
+}

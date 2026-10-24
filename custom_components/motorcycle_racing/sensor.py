@@ -206,6 +206,7 @@ class RiderStandingsSensor(RacingEntity, SensorEntity):
             "season_over": self.series.season_over,
             "standings": [row.as_dict() for row in rows],
         }
+        attrs["champions_history"] = [row.as_dict() for row in self.series.champions]
         champion = self.series.champion_rider
         if self.series.season_over and champion:
             attrs["champion"] = champion.name
