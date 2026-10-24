@@ -6,7 +6,13 @@ import assert from "node:assert/strict";
 const src = readFileSync(
   new URL("../custom_components/motorcycle_racing/www/motorcycle-racing-panel.js", import.meta.url), "utf8");
 const registry = new Map();
-class FakeShadow { constructor() { this.innerHTML = ""; } }
+// Like a real ShadowRoot: events only reach listeners added with addEventListener
+// (assigning root.onclick does nothing, which is exactly the bug this guards against).
+class FakeShadow {
+  constructor() { this.innerHTML = ""; this._l = {}; }
+  addEventListener(type, fn) { (this._l[type] = this._l[type] || []).push(fn); }
+  dispatch(type, ev) { (this._l[type] || []).forEach((fn) => fn(ev)); }
+}
 class FakeElement { attachShadow() { this.shadowRoot = new FakeShadow(); return this.shadowRoot; } dispatchEvent() {} }
 const sandbox = {
   HTMLElement: FakeElement, Event: class {}, navigator: {},
@@ -72,7 +78,7 @@ assert.match(html, /Next season/, "next season card");
 
 p._cls = "motogp"; p._tab = "fixtures"; p._render();
 assert.match(p.shadowRoot.innerHTML, /Japanese GP/);
-p._click({ target: { closest: () => ({ dataset: { act: "event", id: "e1" } }) } });
+p.shadowRoot.dispatch("click", { target: { closest: () => ({ dataset: { act: "event", id: "e1" } }) } });
 await wait();
 html = p.shadowRoot.innerHTML;
 assert.ok(calls.includes("motorcycle_racing/event_results"), "results fetched");
@@ -111,7 +117,7 @@ assert.match(html, /Marc Marquez/, "team riders");
 assert.match(html, /Italian racing team/, "profile extract");
 assert.match(html, /Lenovo/, "sponsors fact");
 assert.match(html, /<select data-act="pick-team">/, "team picker");
-p._click({ target: { closest: () => ({ dataset: { act: "cls", k: "bsb" } }) } });
+p.shadowRoot.dispatch("click", { target: { closest: () => ({ dataset: { act: "cls", k: "bsb" } }) } });
 assert.equal(p._teamPick, null, "team pick reset on class change");
 p._cls = "motogp";
 
@@ -127,8 +133,14 @@ html = p.shadowRoot.innerHTML;
 assert.match(html, /Sprint is live now/, "live note on TV guide");
 assert.match(html, /<td>Race<\/td>/, "sessions still listed while a session is live");
 series[0].live = null;
-p.shadowRoot.onchange({ target: { dataset: { act: "pick-country" }, value: "US" } });
+p.shadowRoot.dispatch("change", { target: { dataset: { act: "pick-country" }, value: "US" } });
 assert.equal(p._country, "US", "country remembered");
+
+// A tab click through the real event path must switch tabs.
+p._tab = "overview"; p._render();
+p.shadowRoot.dispatch("click", { target: { closest: () => ({ dataset: { act: "tab", k: "tables" } }) } });
+assert.equal(p._tab, "tables", "tab click reaches the handler");
+assert.doesNotMatch(src, /root\.onclick|root\.onchange/, "no ShadowRoot onclick/onchange");
 
 console.log("Panel render checks passed.");
 process.exit(0);

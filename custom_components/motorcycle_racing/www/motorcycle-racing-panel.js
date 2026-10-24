@@ -46,6 +46,7 @@ class MotorcycleRacingPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this._bind();
     this._data = null;
     this._error = null;
     this._cls = store("mr_class");
@@ -651,28 +652,35 @@ class MotorcycleRacingPanel extends HTMLElement {
           <span class="credit">Background photo: CC0 / public domain, <a href="${BG_PAGE}" target="_blank" rel="noopener">Wikimedia Commons</a>. ${esc((s && s.attribution) || "")}${s && /not affiliated/i.test(s.attribution || "") ? "" : " Not affiliated with any championship."}</span>
         </footer>
       </div>`;
-    root.onclick = (ev) => this._click(ev);
-    root.onchange = (ev) => {
-      const t = ev.target;
-      if (t && t.dataset && t.dataset.act === "pick-team") {
-        this._teamPick = t.value;
-        store(`mr_team_${this._cls}`, t.value);
-        this._render();
-        return;
-      }
-      if (t && t.dataset && t.dataset.act === "pick-country") {
-        this._country = t.value;
-        store("mr_country", t.value);
-        this._render();
-        return;
-      }
-      if (t && t.dataset && t.dataset.act === "pick-event") {
-        this._eventId = t.value;
-        this._sessionIdx = null;
-        this._loadResults();
-        this._render();
-      }
-    };
+  }
+
+  _bind() {
+    // ShadowRoot has no onclick/onchange properties: use real listeners, once.
+    const root = this.shadowRoot;
+    root.addEventListener("click", (ev) => this._click(ev));
+    root.addEventListener("change", (ev) => this._change(ev));
+  }
+
+  _change(ev) {
+    const t = ev.target;
+    if (t && t.dataset && t.dataset.act === "pick-team") {
+      this._teamPick = t.value;
+      store(`mr_team_${this._cls}`, t.value);
+      this._render();
+      return;
+    }
+    if (t && t.dataset && t.dataset.act === "pick-country") {
+      this._country = t.value;
+      store("mr_country", t.value);
+      this._render();
+      return;
+    }
+    if (t && t.dataset && t.dataset.act === "pick-event") {
+      this._eventId = t.value;
+      this._sessionIdx = null;
+      this._loadResults();
+      this._render();
+    }
   }
 
   _click(ev) {
