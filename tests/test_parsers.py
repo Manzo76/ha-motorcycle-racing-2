@@ -246,6 +246,36 @@ check("fake team title", champ.team_champion, "Ducati Lenovo Team")
 moto2 = FakeMotoGP(None, "moto2", "moto2", "Moto2")
 check("class that did not run -> None", asyncio.run(moto2.async_get_champion("2025", "s25")), None)
 
+
+# --- per-event results for the dashboard panel ------------------------------
+class FakeEventMotoGP(MotoGPProvider):
+    async def _get_json(self, url, params=None):
+        if url.endswith("/results/sessions"):
+            return [
+                {"id": "s-q", "type": "Q", "number": 2, "date": "2020-01-01T10:00:00Z"},
+                {"id": "s-r", "type": "RAC", "date": "2020-01-02T12:00:00Z"},
+                {"id": "s-f", "type": "RAC", "date": "2999-01-02T12:00:00Z"},
+            ]
+        if "/classification" in url:
+            return {"classification": [{"position": 1, "rider": {"full_name": "A Rider", "number": 1}, "team": {"name": "T"}, "time": "1:00.0"}]}
+        raise AssertionError(url)
+
+ev = FakeEventMotoGP(None, "motogp", "motogp", "MotoGP")
+ev._season_uuid, ev._category_uuid = "s", "c"
+out = asyncio.run(ev.async_get_event_results("e1"))
+check("event sessions", [x["name"] for x in out["sessions"]], ["Qualifying 2", "Race", "Race"])
+check("started session has results", out["sessions"][1]["results"][0]["rider"], "A Rider")
+check("future session has none", out["sessions"][2]["results"], [])
+
+class FakeEventSDB(SportsDBProvider):
+    async def _get_json(self, url, params=None):
+        return {"events": [{"strResult": "1. Nicolo Bulega  Aruba.it Racing\n2. Iker Lecuona  Aruba.it Racing"}]}
+
+sd = FakeEventSDB(None, "4454", "worldsbk", "WorldSBK")
+out = asyncio.run(sd.async_get_event_results("123"))
+check("sdb event result", out["sessions"][0]["results"][0]["rider"], "Nicolo Bulega")
+check("sdb event kind", out["sessions"][0]["kind"], "race")
+
 if failures:
     print("FAILURES:")
     for line in failures:

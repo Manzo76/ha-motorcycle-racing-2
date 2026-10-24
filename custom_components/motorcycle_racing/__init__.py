@@ -15,9 +15,14 @@ from .const import (
     CARD_VERSION,
     CONF_REGISTER_CARD,
     DOMAIN,
+    PANEL_FILENAME,
+    PANEL_MODULE_URL,
+    PANEL_URL_PATH,
+    PANEL_VERSION,
     PLATFORMS,
 )
 from .coordinator import RacingCoordinator
+from . import websocket_api as _ws
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,6 +66,36 @@ async def _async_register_card(hass: HomeAssistant) -> None:
     _LOGGER.info("Motorcycle Racing card served at %s", CARD_URL)
 
 
+async def _async_register_panel(hass: HomeAssistant) -> None:
+    """Add the Motorcycle Racing dashboard to the sidebar (once)."""
+    if hass.data.get(f"{DOMAIN}_panel_registered"):
+        return
+    hass.data[f"{DOMAIN}_panel_registered"] = True
+
+    panel_path = Path(__file__).parent / "www" / PANEL_FILENAME
+    if not panel_path.is_file():
+        _LOGGER.warning("Bundled panel %s is missing; skipping", panel_path)
+        return
+    try:
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(PANEL_MODULE_URL, str(panel_path), cache_headers=False)]
+        )
+    except RuntimeError as err:
+        _LOGGER.debug("Panel route already registered: %s", err)
+    from homeassistant.components import panel_custom
+
+    await panel_custom.async_register_panel(
+        hass,
+        webcomponent_name="motorcycle-racing-panel",
+        frontend_url_path=PANEL_URL_PATH,
+        module_url=f"{PANEL_MODULE_URL}?v={PANEL_VERSION}",
+        sidebar_title="Motorcycle Racing",
+        sidebar_icon="mdi:motorbike",
+        require_admin=False,
+        config={},
+    )
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: RacingConfigEntry) -> bool:
     """Set up one series from a config entry."""
     if entry.options.get(CONF_REGISTER_CARD, True):
@@ -68,6 +103,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: RacingConfigEntry) -> bo
             await _async_register_card(hass)
         except Exception:  # noqa: BLE001 - the card is a nice-to-have, never block setup
             _LOGGER.exception("Could not register the bundled dashboard card")
+
+    _ws.async_register(hass)
+    try:
+        await _async_register_panel(hass)
+    except Exception:  # noqa: BLE001 - the panel is optional
+        _LOGGER.exception("Could not register the sidebar panel")
 
     coordinator = RacingCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()

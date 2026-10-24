@@ -76,6 +76,21 @@ minutes from four days before a round. Both are configurable.
 
 ---
 
+## The dashboard (sidebar panel)
+
+Installing the integration adds a **Motorcycle Racing** entry to the Home Assistant sidebar. Pick a class with the chips at the top (your choice is remembered in the browser), then use the tabs:
+
+- **Overview** - last race podium, championship top 10, next round (or champion and next season once the season is over)
+- **Live** - timing for the session in progress, or the latest sessions of the current weekend; refreshes every 30 seconds
+- **Fixtures** - the season calendar; click a round to see its results
+- **Results** - choose any finished race weekend and session
+- **Tables** - rider and team championship tables
+- **Past champions** - the class history, newest season first
+
+Times follow your Home Assistant profile time zone. Background photo: CC0 / public domain, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Motor-Sport-Museum_am_Hockenheimring,_unidentified_motorcycle,_pic-005.JPG).
+
+Coming next: My Team, News, Transfers and a TV guide.
+
 ## The card
 
 The card is served by the integration at `/motorcycle_racing/motorcycle-racing-card.js`

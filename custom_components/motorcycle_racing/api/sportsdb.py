@@ -296,6 +296,23 @@ class SportsDBProvider(RacingProvider):
 
     # -- entry point -------------------------------------------------------
 
+    async def async_get_event_results(self, event_id: str, only_started: bool = True) -> dict[str, Any]:
+        """The race result for one event (TheSportsDB has one session per event)."""
+        detail = await self._get_json(f"{self._root}/lookupevent.php", {"id": event_id})
+        found = (detail or {}).get("events") or []
+        rows = _split_results(found[0].get("strResult")) if found else []
+        return {
+            "event_id": event_id,
+            "sessions": [
+                {
+                    "name": "Race",
+                    "kind": "race",
+                    "id": event_id,
+                    "results": [row.as_dict() for row in rows],
+                }
+            ],
+        }
+
     async def async_get_data(self) -> SeriesData:
         meta = await self._async_league_meta()
         season = meta.get("strCurrentSeason")

@@ -187,6 +187,23 @@ class RacingCoordinator(DataUpdateCoordinator[SeriesData]):
         except Exception as err:  # noqa: BLE001 - history is optional
             _LOGGER.debug("%s champion history backfill failed: %s", self.series_name, err)
 
+    async def async_event_results(self, event_id: str, finished: bool) -> dict:
+        """Sessions + classifications for one weekend. Finished weekends are cached."""
+        cache = self.__dict__.setdefault("_results_cache", {})
+        if event_id in cache:
+            return cache[event_id]
+        getter = getattr(self._provider, "async_get_event_results", None)
+        if getter is None:
+            return {"event_id": event_id, "sessions": []}
+        try:
+            result = await getter(event_id)
+        except (ProviderError, AuthError) as err:
+            _LOGGER.debug("Event results unavailable for %s: %s", event_id, err)
+            return {"event_id": event_id, "sessions": [], "error": str(err)}
+        if finished and any(s.get("results") for s in result.get("sessions", [])):
+            cache[event_id] = result
+        return result
+
     async def async_shutdown(self) -> None:
         if self._history_task and not self._history_task.done():
             self._history_task.cancel()

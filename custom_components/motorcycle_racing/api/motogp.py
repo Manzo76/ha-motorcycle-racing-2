@@ -283,6 +283,37 @@ class MotoGPProvider(RacingProvider):
         ]
         return riders, teams
 
+    # -- per-event results (dashboard panel) --------------------------------
+
+    async def async_get_event_results(self, event_id: str, only_started: bool = True) -> dict[str, Any]:
+        """Every session of one weekend with its classification.
+
+        Returns ``{"event": {...}, "sessions": [{...session, "results": [...]}]}``.
+        Sessions that have not started yet are listed without results.
+        """
+        if not self._season_uuid:
+            await self._async_resolve_season()
+        if not self._category_uuid:
+            await self._async_resolve_category()
+        event = RaceEvent(event_id=event_id, name="")
+        sessions = await self._async_sessions(event)
+        now = datetime.now(timezone.utc)
+        out: list[dict[str, Any]] = []
+        for session in sessions:
+            item = session.as_dict()
+            item["id"] = session.session_id
+            item["results"] = []
+            started = session.start is not None and session.start <= now
+            if started or not only_started:
+                try:
+                    rows = await self._async_classification(session)
+                except ProviderError as err:
+                    _LOGGER.debug("No classification for %s: %s", session.name, err)
+                    rows = []
+                item["results"] = [row.as_dict() for row in rows]
+            out.append(item)
+        return {"event_id": event_id, "sessions": out}
+
     # -- champion history --------------------------------------------------
 
     async def async_list_past_seasons(self, limit: int) -> list[tuple[str, str]]:
