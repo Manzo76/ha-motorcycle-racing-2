@@ -1,0 +1,1079 @@
+{
+ "retrieved": "2026-10-24",
+ "note": "Broadcast rights change often. Check with your provider before relying on a channel.",
+ "sources": [
+  {
+   "name": "WorldSBK: Where to watch the 2026 season",
+   "url": "https://www.worldsbk.com/en/news/2026/Where to watch WorldSBK throughout the 2026 season"
+  },
+  {
+   "name": "British Superbike Championship: How to watch in 2026",
+   "url": "https://www.britishsuperbike.com/news/2026/may/1/how-to-watch-the-zyn-british-superbike-championship-in-2026"
+  },
+  {
+   "name": "MotoGP: country guides (OneRacing, Yahoo Sports, Grande Premio, Visordown)",
+   "url": "https://www.oneracingapp.com/how-to-watch/motogp"
+  }
+ ],
+ "fallback": {
+  "gp": [
+   "MotoGP VideoPass (motogp.com)"
+  ],
+  "worldsbk": [
+   "WorldSBK VideoPass (worldsbk.com)"
+  ],
+  "bsb": [
+   "Free live stream at britishsuperbike.com/live-stream"
+  ]
+ },
+ "countries": {
+  "AE": {
+   "name": "United Arab Emirates",
+   "channels": {
+    "worldsbk": [
+     "beIN Sports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "AL": {
+   "name": "Albania",
+   "channels": {
+    "gp": [
+     "Tring"
+    ]
+   }
+  },
+  "AR": {
+   "name": "Argentina",
+   "channels": {
+    "gp": [
+     "Disney+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "AT": {
+   "name": "Austria",
+   "channels": {
+    "gp": [
+     "ServusTV",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Servus TV",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "AU": {
+   "name": "Australia",
+   "channels": {
+    "gp": [
+     "Fox Sports (Foxtel)",
+     "Kayo Sports",
+     "Network 10",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Fox Sports (live)",
+     "SBS (highlights)",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Fox Sports (live)"
+    ]
+   }
+  },
+  "BA": {
+   "name": "Bosnia & Herzegovina",
+   "channels": {
+    "worldsbk": [
+     "Arena",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "BE": {
+   "name": "Belgium",
+   "channels": {
+    "gp": [
+     "RTBF Auvio",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "RTBF Auvio",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "BG": {
+   "name": "Bulgaria",
+   "channels": {
+    "gp": [
+     "MaxSport"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "BO": {
+   "name": "Bolivia",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "BR": {
+   "name": "Brazil",
+   "channels": {
+    "gp": [
+     "ESPN",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "BandSports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "CA": {
+   "name": "Canada",
+   "channels": {
+    "gp": [
+     "Sportsnet"
+    ],
+    "worldsbk": [
+     "REVTV",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "RACER Network (highlights)"
+    ]
+   }
+  },
+  "CH": {
+   "name": "Switzerland",
+   "channels": {
+    "gp": [
+     "SRF / RSI / RTS"
+    ],
+    "worldsbk": [
+     "Servus TV",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "CL": {
+   "name": "Chile",
+   "channels": {
+    "gp": [
+     "ESPN Latin America",
+     "Disney+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "CN": {
+   "name": "China",
+   "channels": {
+    "gp": [
+     "Douyin"
+    ],
+    "worldsbk": [
+     "Qidian network (Douyin, Weibo, WeChat)",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "CO": {
+   "name": "Colombia",
+   "channels": {
+    "gp": [
+     "ESPN Latin America",
+     "Disney+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "CR": {
+   "name": "Costa Rica",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "CY": {
+   "name": "Cyprus",
+   "channels": {
+    "gp": [
+     "Cytavision"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "CZ": {
+   "name": "Czechia",
+   "channels": {
+    "gp": [
+     "Nova",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Nova Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "DE": {
+   "name": "Germany",
+   "channels": {
+    "gp": [
+     "Sky Sport",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Servus TV",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "DK": {
+   "name": "Denmark",
+   "channels": {
+    "gp": [
+     "Viaplay",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Viaplay",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "EC": {
+   "name": "Ecuador",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "EE": {
+   "name": "Estonia",
+   "channels": {
+    "gp": [
+     "GOGo3"
+    ],
+    "worldsbk": [
+     "TV3",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "EG": {
+   "name": "Egypt",
+   "channels": {
+    "gp": [
+     "beIN Sports"
+    ],
+    "worldsbk": [
+     "beIN Sports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "ES": {
+   "name": "Spain",
+   "channels": {
+    "gp": [
+     "DAZN",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "DAZN",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "FI": {
+   "name": "Finland",
+   "channels": {
+    "gp": [
+     "Viaplay",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Viaplay",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "FR": {
+   "name": "France",
+   "channels": {
+    "gp": [
+     "Canal+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Eurosport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "GB": {
+   "name": "United Kingdom",
+   "channels": {
+    "gp": [
+     "TNT Sports (also via HBO Max)",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "TNT Sports",
+     "ITV4 (highlights)",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "TNT Sports (also via HBO Max)",
+     "Quest (free-to-air; select live rounds, Monday highlights)",
+     "Discovery Turbo (highlights)"
+    ]
+   }
+  },
+  "GR": {
+   "name": "Greece",
+   "channels": {
+    "gp": [
+     "Magenta TV",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "ANT1 TV",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "GT": {
+   "name": "Guatemala",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "HK": {
+   "name": "Hong Kong",
+   "channels": {
+    "worldsbk": [
+     "SPOTV",
+     "NOW TV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "HN": {
+   "name": "Honduras",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "HR": {
+   "name": "Croatia",
+   "channels": {
+    "gp": [
+     "Sport Klub"
+    ],
+    "worldsbk": [
+     "Voyo",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "HU": {
+   "name": "Hungary",
+   "channels": {
+    "gp": [
+     "Arena4+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Arena4",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "ID": {
+   "name": "Indonesia",
+   "channels": {
+    "gp": [
+     "Trans7",
+     "SPOTV NOW",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "Trans7",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "IE": {
+   "name": "Ireland",
+   "channels": {
+    "gp": [
+     "TNT Sports",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "TNT Sports",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "TNT Sports (via your TV provider)"
+    ]
+   }
+  },
+  "IL": {
+   "name": "Israel",
+   "channels": {
+    "gp": [
+     "Sport 5",
+     "MotoGP VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "IN": {
+   "name": "India",
+   "channels": {
+    "gp": [
+     "Eurosport India",
+     "FanCode",
+     "MotoGP VideoPass"
+    ],
+    "bsb": [
+     "Eurosport India (live)"
+    ]
+   }
+  },
+  "IS": {
+   "name": "Iceland",
+   "channels": {
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "IT": {
+   "name": "Italy",
+   "channels": {
+    "gp": [
+     "Sky Sport MotoGP",
+     "TV8 (highlights)",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "TV8 (free-to-air)",
+     "Sky Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "JP": {
+   "name": "Japan",
+   "channels": {
+    "gp": [
+     "NTV",
+     "Hulu Japan",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "J Sports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "KE": {
+   "name": "Kenya",
+   "channels": {
+    "gp": [
+     "SuperSport"
+    ],
+    "worldsbk": [
+     "SuperSport",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "KR": {
+   "name": "South Korea",
+   "channels": {
+    "gp": [
+     "SPOTV NOW"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "KZ": {
+   "name": "Kazakhstan",
+   "channels": {
+    "gp": [
+     "QSSport"
+    ]
+   }
+  },
+  "LT": {
+   "name": "Lithuania",
+   "channels": {
+    "gp": [
+     "GOGo3"
+    ],
+    "worldsbk": [
+     "TV3",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "LU": {
+   "name": "Luxembourg",
+   "channels": {
+    "worldsbk": [
+     "RTL",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "LV": {
+   "name": "Latvia",
+   "channels": {
+    "gp": [
+     "GOGo3"
+    ],
+    "worldsbk": [
+     "TV3",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "MC": {
+   "name": "Monaco",
+   "channels": {
+    "worldsbk": [
+     "Sky Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "ME": {
+   "name": "Montenegro",
+   "channels": {
+    "worldsbk": [
+     "Arena",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "MK": {
+   "name": "North Macedonia",
+   "channels": {
+    "worldsbk": [
+     "Arena",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "MT": {
+   "name": "Malta",
+   "channels": {
+    "gp": [
+     "GO Sports Premium"
+    ],
+    "worldsbk": [
+     "Sky Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "MX": {
+   "name": "Mexico",
+   "channels": {
+    "gp": [
+     "ESPN Latin America",
+     "Disney+",
+     "MotoGP VideoPass"
+    ]
+   }
+  },
+  "MY": {
+   "name": "Malaysia",
+   "channels": {
+    "gp": [
+     "SPOTV NOW",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "NG": {
+   "name": "Nigeria",
+   "channels": {
+    "gp": [
+     "SuperSport"
+    ],
+    "worldsbk": [
+     "SuperSport",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "NI": {
+   "name": "Nicaragua",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "NL": {
+   "name": "Netherlands",
+   "channels": {
+    "gp": [
+     "Ziggo Sport",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Viaplay",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "NO": {
+   "name": "Norway",
+   "channels": {
+    "gp": [
+     "Viaplay",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Viaplay",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "NZ": {
+   "name": "New Zealand",
+   "channels": {
+    "gp": [
+     "Sky Sport NZ",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "TVNZ",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "PA": {
+   "name": "Panama",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "PE": {
+   "name": "Peru",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "PH": {
+   "name": "Philippines",
+   "channels": {
+    "gp": [
+     "SPOTV NOW",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "PK": {
+   "name": "Pakistan",
+   "channels": {
+    "gp": [
+     "Begin.Watch"
+    ]
+   }
+  },
+  "PL": {
+   "name": "Poland",
+   "channels": {
+    "gp": [
+     "Polsat Box Go",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Eurosport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "PT": {
+   "name": "Portugal",
+   "channels": {
+    "gp": [
+     "Sport TV",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Sport TV",
+     "DAZN",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "PY": {
+   "name": "Paraguay",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "QA": {
+   "name": "Qatar",
+   "channels": {
+    "worldsbk": [
+     "beIN Sports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "RO": {
+   "name": "Romania",
+   "channels": {
+    "gp": [
+     "DigiSport"
+    ],
+    "worldsbk": [
+     "DIGI Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "RS": {
+   "name": "Serbia",
+   "channels": {
+    "worldsbk": [
+     "Arena",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "SA": {
+   "name": "Saudi Arabia",
+   "channels": {
+    "worldsbk": [
+     "beIN Sports",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "SE": {
+   "name": "Sweden",
+   "channels": {
+    "gp": [
+     "Viaplay",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Viaplay",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "SG": {
+   "name": "Singapore",
+   "channels": {
+    "gp": [
+     "SPOTV NOW",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "SI": {
+   "name": "Slovenia",
+   "channels": {
+    "gp": [
+     "Voyo"
+    ],
+    "worldsbk": [
+     "Pop TV",
+     "Kanal A",
+     "Voyo",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "SK": {
+   "name": "Slovakia",
+   "channels": {
+    "gp": [
+     "OnePlay",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Nova Sport",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "SV": {
+   "name": "El Salvador",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "TH": {
+   "name": "Thailand",
+   "channels": {
+    "gp": [
+     "TrueVisions",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "TR": {
+   "name": "Türkiye",
+   "channels": {
+    "gp": [
+     "S Sport+",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "Saran",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "Eurosport / HBO Max (live)"
+    ]
+   }
+  },
+  "TW": {
+   "name": "Taiwan",
+   "channels": {
+    "gp": [
+     "VL Sports"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "Videoland",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "US": {
+   "name": "United States",
+   "channels": {
+    "gp": [
+     "FS1 / FS2 (Fox Sports app)",
+     "MotoGP Channel (free streaming; Moto2, Moto3, MotoE live)"
+    ],
+    "worldsbk": [
+     "RACER Network",
+     "WorldSBK VideoPass"
+    ],
+    "bsb": [
+     "RACER Network (highlights)"
+    ]
+   }
+  },
+  "UY": {
+   "name": "Uruguay",
+   "channels": {
+    "gp": [
+     "ESPN Latin America",
+     "Disney+",
+     "DAZN",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "VE": {
+   "name": "Venezuela",
+   "channels": {
+    "worldsbk": [
+     "ESPN",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "VN": {
+   "name": "Vietnam",
+   "channels": {
+    "gp": [
+     "SPOTV NOW",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SPOTV",
+     "WorldSBK VideoPass"
+    ]
+   }
+  },
+  "ZA": {
+   "name": "South Africa",
+   "channels": {
+    "gp": [
+     "SuperSport",
+     "MotoGP VideoPass"
+    ],
+    "worldsbk": [
+     "SuperSport",
+     "WorldSBK VideoPass"
+    ]
+   }
+  }
+ }
+}

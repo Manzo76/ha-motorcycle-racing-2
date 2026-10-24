@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import SeriesData
+from .api.extras import Extras
 from .api.models import RaceEvent
 from .const import DOMAIN
 from .coordinator import RacingCoordinator
@@ -63,6 +66,15 @@ def _series_payload(coordinator: RacingCoordinator) -> dict[str, Any]:
     }
 
 
+def _extras(hass: HomeAssistant) -> Extras:
+    key = f"{DOMAIN}_extras"
+    if key not in hass.data:
+        hass.data[key] = Extras(
+            async_get_clientsession(hass), Path(__file__).parent / "data"
+        )
+    return hass.data[key]
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     """Register the panel's websocket commands (idempotent)."""
@@ -72,6 +84,11 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_overview)
     websocket_api.async_register_command(hass, ws_event_results)
     websocket_api.async_register_command(hass, ws_live)
+    websocket_api.async_register_command(hass, ws_news)
+    websocket_api.async_register_command(hass, ws_transfers)
+    websocket_api.async_register_command(hass, ws_teams)
+    websocket_api.async_register_command(hass, ws_team_profile)
+    websocket_api.async_register_command(hass, ws_tv)
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/overview"})
@@ -133,3 +150,95 @@ async def ws_live(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             "sessions": result.get("sessions", []),
         },
     )
+
+
+def _season(hass: HomeAssistant, series: str) -> str | None:
+    coordinator = _coordinators(hass).get(series)
+    return coordinator.data.season if coordinator and coordinator.data else None
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/news", vol.Required("series"): str}
+)
+@websocket_api.async_response
+async def ws_news(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Latest headlines for a class."""
+    connection.send_result(msg["id"], await _extras(hass).async_news(msg["series"]))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/transfers", vol.Required("series"): str}
+)
+@websocket_api.async_response
+async def ws_transfers(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Next season's movers plus rider-market headlines."""
+    result = await _extras(hass).async_transfers(msg["series"], _season(hass, msg["series"]))
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/teams", vol.Required("series"): str}
+)
+@websocket_api.async_response
+async def ws_teams(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Teams (with riders) for the class; falls back to the championship tables."""
+    series = msg["series"]
+    result = await _extras(hass).async_teams(series, _season(hass, series))
+    teams = result.get("teams") or []
+    coordinator = _coordinators(hass).get(series)
+    data = coordinator.data if coordinator else None
+    if data:
+        riders = {r.name: r for r in data.rider_standings}
+        # Attach this season's points/position to each rider and team.
+        for team in teams:
+            for rider in team["riders"]:
+                row = riders.get(rider["name"])
+                if row:
+                    rider["points"] = row.points
+                    rider["position"] = row.position
+        position = {t.name: t for t in data.team_standings}
+        for team in teams:
+            row = position.get(team["name"])
+            if row:
+                team["points"] = row.points
+                team["position"] = row.position
+        if not teams:
+            # No entry list for this class: build teams from the standings.
+            grouped: dict[str, list] = {}
+            for r in data.rider_standings:
+                if r.team:
+                    grouped.setdefault(r.team, []).append(
+                        {"name": r.name, "number": r.number, "points": r.points, "position": r.position}
+                    )
+            for name, members in grouped.items():
+                row = position.get(name)
+                teams.append(
+                    {"name": name, "title": None, "constructor": None, "bike": None,
+                     "riders": members, "points": row.points if row else None,
+                     "position": row.position if row else None}
+                )
+    connection.send_result(msg["id"], {"teams": teams, "year": result.get("year")})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/team_profile",
+        vol.Required("name"): str,
+        vol.Optional("title"): vol.Any(str, None),
+    }
+)
+@websocket_api.async_response
+async def ws_team_profile(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Wikipedia summary, picture and infobox facts for a team."""
+    result = await _extras(hass).async_team_profile(msg.get("title"), msg["name"])
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/tv", vol.Optional("country"): vol.Any(str, None)}
+)
+@websocket_api.async_response
+async def ws_tv(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Broadcasters for a country (curated list) - sessions come from the overview."""
+    country = msg.get("country") or hass.config.country
+    connection.send_result(msg["id"], await _extras(hass).async_tv(country))

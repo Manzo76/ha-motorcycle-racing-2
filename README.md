@@ -89,7 +89,14 @@ Installing the integration adds a **Motorcycle Racing** entry to the Home Assist
 
 Times follow your Home Assistant profile time zone. Background photo: CC0 / public domain, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Motor-Sport-Museum_am_Hockenheimring,_unidentified_motorcycle,_pic-005.JPG).
 
-Coming next: My Team, News, Transfers and a TV guide.
+Four more tabs:
+
+- **My Team** - pick a team to see its riders (with this season's points), a Wikipedia summary and photo, and facts such as base, principal and sponsors when Wikipedia lists them. Your pick is remembered per class.
+- **News** - the latest headlines for the class from [Crash.net](https://www.crash.net/) RSS feeds, with links out to the full stories.
+- **Transfers** - next season's movers (team changes, new riders, riders not yet on the list), worked out by comparing Wikipedia's current and next-season entry lists for MotoGP, Moto2 and Moto3, plus rider-market headlines for every class. Next-season lists are provisional.
+- **TV guide** - pick your country (defaults to your Home Assistant country) to see which channels carry each class, with upcoming session times in your time zone. The channel list is curated from the championships' own "where to watch" pages and dated, because broadcast rights change often and there is no public feed for them.
+
+Every live source degrades on its own: if one is unreachable that tab says so and the rest keep working.
 
 ## The card
 

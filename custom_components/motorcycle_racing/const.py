@@ -55,7 +55,7 @@ CARD_VERSION: Final = "7"
 PANEL_URL_PATH: Final = "racing-hub"
 PANEL_MODULE_URL: Final = f"/{DOMAIN}/motorcycle-racing-panel.js"
 PANEL_FILENAME: Final = "motorcycle-racing-panel.js"
-PANEL_VERSION: Final = "3"
+PANEL_VERSION: Final = "4"
 
 # ---------------------------------------------------------------------------
 # Series catalogue

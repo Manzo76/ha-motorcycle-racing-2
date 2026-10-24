@@ -27,7 +27,7 @@ const rows = [
 ];
 const series = [
   { key: "motogp", name: "MotoGP", accent: "#D6001C", ready: true, season: "2026", season_over: false,
-    live: null, next_event: { id: "e2", name: "Japanese GP", circuit: "Motegi", country: "Japan", start: "2026-10-02T04:00:00+00:00", end: "2026-10-04T08:00:00+00:00" },
+    live: null, next_event: { id: "e2", name: "Japanese GP", sessions: [{ name: "Race", kind: "race", start: new Date(Date.now() + 86400000).toISOString() }], circuit: "Motegi", country: "Japan", start: "2026-10-02T04:00:00+00:00", end: "2026-10-04T08:00:00+00:00" },
     next_session: { name: "Race", start: "2026-10-04T07:00:00+00:00" },
     last_event: { id: "e1", name: "Australian GP", circuit: "Phillip Island", start: "2026-09-18T00:00:00+00:00", end: "2026-09-20T05:00:00+00:00", finished: true },
     last_results: rows,
@@ -44,6 +44,11 @@ const hass = {
     calls.push(msg.type);
     if (msg.type.endsWith("overview")) return { series };
     if (msg.type.endsWith("event_results")) return { sessions: [{ name: "Race", kind: "race", results: rows }, { name: "Qualifying", kind: "qualifying", results: rows }] };
+    if (msg.type.endsWith("/news")) return { source: "Crash.net", items: [{ title: "Marc <b>wins</b>", link: "https://www.crash.net/a", summary: "Great sprint", source: "Crash.net", published: new Date().toISOString() }] };
+    if (msg.type.endsWith("/transfers")) return { year: 2027, moves: [{ kind: "move", rider: "Francesco Bagnaia", number: "63", from: "Ducati Lenovo Team", to: "Aprilia Racing" }, { kind: "new", rider: "Pedro Acosta", to: "Ducati Lenovo Team" }, { kind: "out", rider: "Jorge Martin", from: "Aprilia Racing" }], headlines: [{ title: "Rookie signs for 2027", link: "https://www.crash.net/b", source: "Crash.net", published: new Date().toISOString() }] };
+    if (msg.type.endsWith("/teams")) return { teams: [{ name: "Ducati Lenovo Team", title: "Ducati Lenovo Team", constructor: "Ducati", bike: "GP27", position: 1, points: 500, riders: [{ name: "Marc Marquez", number: "93", position: 1, points: 300 }] }, { name: "Aprilia Racing", riders: [{ name: "Jorge Martin", number: "89" }] }] };
+    if (msg.type.endsWith("/team_profile")) return { extract: "Italian racing team.", url: "https://en.wikipedia.org/wiki/Ducati", image: "https://example.invalid/i.jpg", facts: { base: "Bologna", sponsors: "Lenovo" } };
+    if (msg.type.endsWith("/tv")) return { country: msg.country, countries: [{ code: "GB", name: "United Kingdom" }, { code: "US", name: "United States" }], channels: { gp: ["TNT Sports", "MotoGP VideoPass"], bsb: ["TNT Sports"] }, fallback: { gp: ["MotoGP VideoPass"], worldsbk: ["WorldSBK VideoPass"], bsb: ["Live stream"] }, retrieved: "2026-10-24", sources: [{ name: "Src", url: "https://example.invalid" }] };
     if (msg.type.endsWith("live")) return { live: { name: "Race" }, event: { name: "Japanese GP" }, sessions: [{ name: "Race", results: rows }] };
   },
 };
@@ -81,5 +86,43 @@ p._tab = "tables"; p._render();
 assert.match(p.shadowRoot.innerHTML, /Ducati/, "tables");
 p._tab = "history"; p._render();
 assert.match(p.shadowRoot.innerHTML, /past champions/, "history");
+
+// ---- v2 tabs ----
+p._cls = "motogp";
+p._tab = "news"; p._afterNav(); await wait();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /Great sprint/, "news summary");
+assert.match(html, /rel="noopener noreferrer"/, "external links are safe");
+assert.doesNotMatch(html, /<b>wins<\/b>/, "news title escaped");
+assert.match(html, /from Crash\.net/i, "news attribution");
+
+p._tab = "transfers"; p._afterNav(); await wait();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /Francesco Bagnaia/, "mover shown");
+assert.match(html, /Aprilia Racing/, "destination");
+assert.match(html, /New to the MotoGP grid/, "new riders group");
+assert.match(html, /Not on the 2027 list yet/, "out group");
+assert.match(html, /Rookie signs for 2027/, "market headlines");
+
+p._tab = "team"; p._afterNav(); await wait(); await wait();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /Ducati Lenovo Team/, "team shown");
+assert.match(html, /Marc Marquez/, "team riders");
+assert.match(html, /Italian racing team/, "profile extract");
+assert.match(html, /Lenovo/, "sponsors fact");
+assert.match(html, /<select data-act="pick-team">/, "team picker");
+p._click({ target: { closest: () => ({ dataset: { act: "cls", k: "bsb" } }) } });
+assert.equal(p._teamPick, null, "team pick reset on class change");
+p._cls = "motogp";
+
+p._tab = "tv"; p._afterNav(); await wait();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /TNT Sports/, "channels");
+assert.match(html, /United Kingdom/, "country picker");
+assert.match(html, /Wrong channel\?/, "feedback link");
+assert.match(html, /Race/, "upcoming session listed");
+p.shadowRoot.onchange({ target: { dataset: { act: "pick-country" }, value: "US" } });
+assert.equal(p._country, "US", "country remembered");
+
 console.log("Panel render checks passed.");
 process.exit(0);

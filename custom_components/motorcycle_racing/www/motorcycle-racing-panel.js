@@ -21,6 +21,10 @@ const TABS = [
   ["results", "Results"],
   ["tables", "Tables"],
   ["history", "Past champions"],
+  ["team", "My Team"],
+  ["news", "News"],
+  ["transfers", "Transfers"],
+  ["tv", "TV guide"],
 ];
 
 const esc = (v) =>
@@ -53,6 +57,8 @@ class MotorcycleRacingPanel extends HTMLElement {
     this._live = null;
     this._timers = [];
     this._loading = false;
+    this._remote = {}; // cache for news / transfers / teams / profiles / tv
+    this._country = store("mr_country");
   }
 
   set hass(hass) {
@@ -135,6 +141,39 @@ class MotorcycleRacingPanel extends HTMLElement {
       this._results[key] = { done: true, sessions: [], error: true };
     }
     this._render();
+  }
+
+  // Cached websocket call. Returns the cache entry {state, data}; renders when done.
+  _fetch(key, msg, ttl = 600000) {
+    const hit = this._remote[key];
+    if (hit && (hit.state === "loading" || Date.now() - hit.at < ttl)) return hit;
+    const entry = { state: "loading", data: hit ? hit.data : null, at: Date.now() };
+    this._remote[key] = entry;
+    this._hass
+      .callWS(msg)
+      .then((data) => {
+        this._remote[key] = { state: "ok", data, at: Date.now() };
+      })
+      .catch(() => {
+        this._remote[key] = { state: "err", data: entry.data, at: Date.now() - ttl + 60000 };
+      })
+      .then(() => this._render());
+    return entry;
+  }
+
+  _ago(iso) {
+    if (!iso) return "";
+    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (mins < 60) return `${mins} min ago`;
+    if (mins < 1440) return `${Math.round(mins / 60)} h ago`;
+    if (mins < 14400) return `${Math.round(mins / 1440)} d ago`;
+    return this._date(iso);
+  }
+
+  _status(entry, what) {
+    if (!entry || entry.state === "loading") return `<p class="muted">Loading ${what}...</p>`;
+    if (entry.state === "err" && !entry.data) return `<p class="muted err">Could not load ${what}. It will retry shortly.</p>`;
+    return "";
   }
 
   _series() {
@@ -374,6 +413,129 @@ class MotorcycleRacingPanel extends HTMLElement {
     return `<section class="card"><h3>${esc(s.name)} past champions</h3>${note}${this._table(s.champions, cols)}</section>`;
   }
 
+
+  _viewNews(s) {
+    const e = this._fetch(`news:${s.key}`, { type: "motorcycle_racing/news", series: s.key }, 900000);
+    const st = this._status(e, "news");
+    if (st) return st;
+    const d = e.data || {};
+    if (d.error || !(d.items || []).length) return `<p class="muted">No headlines available right now.</p>`;
+    return `${d.note ? `<p class="muted">${esc(d.note)}</p>` : ""}
+      <div class="news">${d.items
+        .map(
+          (i) => `<a class="item" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">
+            <b>${esc(i.title)}</b>
+            ${i.summary ? `<span>${esc(i.summary)}</span>` : ""}
+            <small>${esc(i.source)} &middot; ${esc(this._ago(i.published))}</small></a>`
+        )
+        .join("")}</div>
+      <p class="muted small">Headlines from ${esc(d.source || "Crash.net")}. Tap one to read the full story on their site.</p>`;
+  }
+
+  _viewTransfers(s) {
+    const e = this._fetch(`tr:${s.key}`, { type: "motorcycle_racing/transfers", series: s.key }, 1800000);
+    const st = this._status(e, "transfers");
+    if (st) return st;
+    const d = e.data || {};
+    const group = (kind, title, fmt) => {
+      const rows = (d.moves || []).filter((m) => m.kind === kind);
+      if (!rows.length) return "";
+      return `<section class="card"><h3>${title}</h3><div class="moves">${rows.map(fmt).join("")}</div></section>`;
+    };
+    const num = (m) => (m.number && m.number !== "TBA" ? ` <i>#${esc(m.number)}</i>` : "");
+    const parts = [
+      group("move", `Changing team for ${d.year}`, (m) => `<div class="mv"><b>${esc(m.rider)}</b>${num(m)}<span>${esc(m.from)} <em>&rarr;</em> ${esc(m.to)}</span></div>`),
+      group("new", `New to the ${esc(s.name)} grid`, (m) => `<div class="mv"><b>${esc(m.rider)}</b>${num(m)}<span>${esc(m.to)}</span></div>`),
+      group("out", `Not on the ${d.year} list yet`, (m) => `<div class="mv"><b>${esc(m.rider)}</b><span>${esc(m.from)}</span></div>`),
+    ].join("");
+    const heads = (d.headlines || [])
+      .map((i) => `<a class="item" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer"><b>${esc(i.title)}</b><small>${esc(i.source)} &middot; ${esc(this._ago(i.published))}</small></a>`)
+      .join("");
+    const note = d.moves && d.moves.length
+      ? `<p class="muted small">Compared from Wikipedia's ${esc(s.season)} and ${esc(d.year)} entry lists. The ${esc(d.year)} list is provisional, so seats can still change.</p>`
+      : s.key === "motogp" || s.key === "moto2" || s.key === "moto3"
+        ? `<p class="muted">No ${esc(d.year)} line-up published yet.</p>`
+        : `<p class="muted">No entry list is published for ${esc(s.name)}, so this shows rider-market headlines.</p>`;
+    return `${note}${parts}${heads ? `<section class="card"><h3>Rider market headlines</h3><div class="news">${heads}</div></section>` : ""}`;
+  }
+
+  _viewTeam(s) {
+    const te = this._fetch(`teams:${s.key}`, { type: "motorcycle_racing/teams", series: s.key }, 1800000);
+    const st = this._status(te, "teams");
+    if (st) return st;
+    const teams = (te.data && te.data.teams) || [];
+    if (!teams.length) return `<p class="muted">No team information is available for ${esc(s.name)} yet.</p>`;
+    let name = this._teamPick || store(`mr_team_${s.key}`);
+    let team = teams.find((t) => t.name === name) || teams[0];
+    const opts = teams
+      .map((t) => `<option value="${esc(t.name)}" ${t.name === team.name ? "selected" : ""}>${esc(t.name)}</option>`)
+      .join("");
+    const pe = this._fetch(`profile:${team.name}`, { type: "motorcycle_racing/team_profile", name: team.name, title: team.title || null }, 21600000);
+    const p = (pe && pe.data) || {};
+    const facts = Object.entries(p.facts || {});
+    const label = (k) => k.replace(/\b\w/g, (c) => c.toUpperCase());
+    const riders = this._table(team.riders, [
+      { h: "No.", cls: "n", f: (r) => esc(r.number && r.number !== "TBA" ? r.number : "") },
+      { h: "Rider", f: (r) => `<b>${esc(r.name)}</b>` },
+      { h: "Pos", cls: "n", f: (r) => esc(r.position ?? "") },
+      { h: "Pts", cls: "n", f: (r) => esc(r.points ?? "") },
+    ]);
+    return `<label class="sel">Team <select data-act="pick-team">${opts}</select></label>
+      <div class="grid">
+        <section class="card teamhead">
+          ${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : ""}
+          <h3>${esc(team.name)}</h3>
+          <p class="muted">${[team.constructor, team.bike].filter(Boolean).map(esc).join(" &middot; ")}${
+            team.position ? ` &middot; ${esc(s.name)} teams: P${esc(team.position)}, ${esc(team.points)} pts` : ""
+          }</p>
+          ${pe && pe.state === "loading" ? `<p class="muted">Loading team profile...</p>` : p.extract ? `<p>${esc(p.extract)}</p>` : ""}
+          ${p.url ? `<p><a class="lnk" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Read more on Wikipedia</a></p>` : ""}
+        </section>
+        <section class="card"><h3>Riders</h3>${riders}</section>
+        ${facts.length ? `<section class="card"><h3>Team facts</h3><table><tbody>${facts.map(([k, v]) => `<tr><td><b>${esc(label(k))}</b></td><td>${esc(v)}</td></tr>`).join("")}</tbody></table>
+          ${facts.some(([k]) => /sponsor/.test(k)) ? "" : `<p class="muted small">Sponsor details are not listed for this team.</p>`}</section>` : ""}
+      </div>`;
+  }
+
+  _viewTv() {
+    const code = this._country || (this._hass.config && this._hass.config.country) || "GB";
+    const e = this._fetch(`tv:${code}`, { type: "motorcycle_racing/tv", country: code }, 3600000);
+    const st = this._status(e, "TV guide");
+    if (st) return st;
+    const d = e.data || {};
+    const opts = (d.countries || [])
+      .map((c) => `<option value="${esc(c.code)}" ${c.code === d.country ? "selected" : ""}>${esc(c.name)}</option>`)
+      .join("");
+    const group = (key) => (key === "worldsbk" ? "worldsbk" : key === "bsb" ? "bsb" : "gp");
+    const blocks = (this._data || [])
+      .filter((x) => x.ready)
+      .map((x) => {
+        const g = group(x.key);
+        const channels = (d.channels || {})[g] || (d.fallback || {})[g] || [];
+        const direct = !!(d.channels || {})[g];
+        const ev = x.live ? null : x.next_event;
+        const sessions = ev
+          ? (ev.sessions || []).filter((se) => se.start && new Date(se.start) > new Date(Date.now() - 3600000)).slice(0, 8)
+          : [];
+        const when = sessions.length
+          ? `<table><tbody>${sessions
+              .map((se) => `<tr><td>${esc(this._day(se.start))}</td><td class="n">${esc(this._time(se.start))}</td><td>${esc(se.name)}</td></tr>`)
+              .join("")}</tbody></table>`
+          : `<p class="muted">${x.season_over ? "Season complete." : "Session times appear closer to the race weekend."}</p>`;
+        return `<section class="card"><h3>${esc(x.name)}${ev ? ` <small class="muted">${esc(ev.name)}</small>` : ""}</h3>
+          <div class="chan">${channels.length ? channels.map((c) => `<span class="chip">${esc(c)}</span>`).join("") : `<span class="muted">No listing</span>`}</div>
+          ${direct || !channels.length ? "" : `<p class="muted small">No local broadcaster listed for ${esc(d.country || "your country")}; this is the global option.</p>`}
+          ${when}</section>`;
+      })
+      .join("");
+    return `<label class="sel">Country <select data-act="pick-country">${opts}</select></label>
+      ${d.country ? "" : `<p class="muted">Pick your country to see local channels.</p>`}
+      <div class="grid">${blocks}</div>
+      <p class="muted small">Times are shown in your Home Assistant time zone. Channel list last checked ${esc(d.retrieved || "")}. Broadcast rights change often, so check with your provider.
+        ${(d.sources || []).map((x) => `<a class="lnk" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>`).join(" &middot; ")}
+        &middot; <a class="lnk" href="${PANEL_REPO}/issues" target="_blank" rel="noopener noreferrer">Wrong channel? Tell us</a></p>`;
+  }
+
   // ---- shell --------------------------------------------------------------
 
   _share() {
@@ -406,6 +568,10 @@ class MotorcycleRacingPanel extends HTMLElement {
         results: "_viewResults",
         tables: "_viewTables",
         history: "_viewHistory",
+        team: "_viewTeam",
+        news: "_viewNews",
+        transfers: "_viewTransfers",
+        tv: "_viewTv",
       }[this._tab];
       view = this[fn](s);
     }
@@ -451,6 +617,16 @@ class MotorcycleRacingPanel extends HTMLElement {
         .fx .rd { width:28px; font-weight:800; opacity:.6; } .fx .nm { flex:1; } .fx small { display:block; opacity:.85; } .fx .dt { opacity:.8; white-space:nowrap; }
         .tag { font-style:normal; font-size:.7rem; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.14); } .tag.next { background:var(--accent); }
         label.sel { display:block; margin-bottom:10px; } select { margin-left:8px; background:rgba(18,18,26,.85); color:inherit; border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:7px 10px; font:inherit; max-width:100%; }
+        .news { display:flex; flex-direction:column; gap:8px; }
+        .item { display:flex; flex-direction:column; gap:4px; background:rgba(10,10,16,.82); border:1px solid rgba(255,255,255,.16); border-radius:12px; padding:12px 14px; color:inherit; text-decoration:none; }
+        .item:hover { border-color:var(--accent); } .item span { opacity:.9; font-size:.9rem; } .item small { opacity:.8; }
+        .card .item { background:rgba(255,255,255,.06); }
+        .moves { display:flex; flex-direction:column; gap:6px; }
+        .mv { display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline; padding:6px 0; border-top:1px solid rgba(255,255,255,.09); }
+        .mv:first-child { border-top:0; } .mv span { opacity:.9; } .mv em { color:var(--accent); font-style:normal; filter:brightness(1.5); } .mv i { opacity:.8; font-style:normal; }
+        .teamhead img { float:right; max-width:42%; max-height:130px; margin:0 0 8px 12px; border-radius:10px; object-fit:cover; }
+        .chan { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 10px; } .chip { background:var(--accent); color:#fff; border-radius:999px; padding:4px 12px; font-size:.85rem; font-weight:600; text-shadow:none; }
+        .lnk { color:#fff; text-decoration:underline; } .small { font-size:.78rem; }
         footer { margin-top:24px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:.8rem; opacity:.9; }
         footer a, footer button { color:inherit; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:6px 14px; text-decoration:none; cursor:pointer; font:inherit; }
         footer .credit { flex-basis:100%; opacity:.85; font-size:.72rem; } footer .credit a { background:none; border:0; padding:0; text-decoration:underline; }
@@ -477,6 +653,18 @@ class MotorcycleRacingPanel extends HTMLElement {
     root.onclick = (ev) => this._click(ev);
     root.onchange = (ev) => {
       const t = ev.target;
+      if (t && t.dataset && t.dataset.act === "pick-team") {
+        this._teamPick = t.value;
+        store(`mr_team_${this._cls}`, t.value);
+        this._render();
+        return;
+      }
+      if (t && t.dataset && t.dataset.act === "pick-country") {
+        this._country = t.value;
+        store("mr_country", t.value);
+        this._render();
+        return;
+      }
       if (t && t.dataset && t.dataset.act === "pick-event") {
         this._eventId = t.value;
         this._sessionIdx = null;
@@ -492,6 +680,7 @@ class MotorcycleRacingPanel extends HTMLElement {
     const act = el.dataset.act;
     if (act === "cls") {
       this._cls = el.dataset.k;
+      this._teamPick = null;
       store("mr_class", this._cls);
       this._eventId = null;
       this._sessionIdx = null;
