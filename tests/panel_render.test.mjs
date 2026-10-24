@@ -33,7 +33,7 @@ const rows = [
 ];
 const series = [
   { key: "motogp", name: "MotoGP", accent: "#D6001C", ready: true, season: "2026", season_over: false,
-    live: null, next_event: { id: "e2", name: "Japanese GP", sessions: [{ name: "Race", kind: "race", start: new Date(Date.now() + 86400000).toISOString() }], circuit: "Motegi", country: "Japan", start: "2026-10-02T04:00:00+00:00", end: "2026-10-04T08:00:00+00:00" },
+    live: null, next_event: { id: "e2", name: "Japanese GP", circuit_map: "https://example.invalid/map.png", sessions: [{ name: "Race", kind: "race", start: new Date(Date.now() + 86400000).toISOString() }], circuit: "Motegi", country: "Japan", start: "2026-10-02T04:00:00+00:00", end: "2026-10-04T08:00:00+00:00" },
     next_session: { name: "Race", start: "2026-10-04T07:00:00+00:00" },
     last_event: { id: "e1", name: "Australian GP", circuit: "Phillip Island", start: "2026-09-18T00:00:00+00:00", end: "2026-09-20T05:00:00+00:00", finished: true },
     last_results: rows,
@@ -67,6 +67,7 @@ let html = p.shadowRoot.innerHTML;
 assert.match(html, /Next: <b>Japanese GP/, "overview next race");
 assert.match(html, /class="podium"/, "podium");
 assert.match(html, /Latest sprint: Australian GP/, "latest sprint card");
+assert.match(html, /class="circuit" src="https:\/\/example.invalid\/map.png"/, "circuit picture");
 assert.doesNotMatch(html, /<b>Four<\/b>/, "html escaped");
 assert.match(html, /Star us on GitHub/, "github link");
 assert.match(html, /Wikimedia Commons/, "image credit");

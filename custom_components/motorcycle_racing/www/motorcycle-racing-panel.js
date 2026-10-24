@@ -324,7 +324,11 @@ class MotorcycleRacingPanel extends HTMLElement {
             if (!e) return `<p class="muted">Not announced yet.</p>`;
             return `<p><b>${esc(e.name)}</b></p><p class="muted">${esc(e.circuit || "")}${
               e.country ? ` &middot; ${esc(e.country)}` : ""
-            }</p><p>${esc(this._date(e.start))}</p>`;
+            }</p><p>${esc(this._date(e.start))}</p>${
+              e.circuit_map || e.poster
+                ? `<img class="circuit" src="${esc(e.circuit_map || e.poster)}" alt="${esc(e.circuit || "Circuit")} layout" loading="lazy" referrerpolicy="no-referrer">`
+                : ""
+            }`;
           })()}
         </section>
       </div>`;
@@ -620,6 +624,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         th { text-align:left; font-weight:700; opacity:.95; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; padding:6px 8px; }
         td { padding:7px 8px; border-top:1px solid rgba(255,255,255,.07); }
         .n { text-align:right; white-space:nowrap; } td i { opacity:.8; font-style:normal; }
+        img.circuit { display:block; max-width:100%; max-height:220px; margin:10px auto 0; background:rgba(255,255,255,.92); border-radius:10px; padding:8px; box-sizing:border-box; }
         .podium { display:flex; gap:8px; align-items:flex-end; justify-content:center; margin:10px 0 12px; }
         .pod { flex:1; max-width:170px; text-align:center; padding:8px 6px; border-radius:10px 10px 0 0; background:rgba(255,255,255,.07); }
         .pod b, .pod span { display:block; font-size:.85rem; } .pod span { opacity:.85; font-size:.75rem; }
