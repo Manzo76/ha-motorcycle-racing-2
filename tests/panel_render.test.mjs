@@ -50,6 +50,7 @@ const hass = {
     calls.push(msg.type);
     if (msg.type.endsWith("overview")) return { series };
     if (msg.type.endsWith("event_results")) return { sessions: [{ name: "Race", kind: "race", results: rows }, { name: "Qualifying", kind: "qualifying", results: rows }] };
+    if (msg.type.endsWith("repo_stats")) return { stars: 7, forks: 2, watchers: 1 };
     if (msg.type.endsWith("latest_sprint")) return { event: { name: "Australian GP" }, sprint: { name: "Sprint", kind: "sprint", start: "2026-10-24T04:00:00+00:00", circuit: "Phillip Island", results: rows } };
     if (msg.type.endsWith("/news")) return { source: "Crash.net", items: [{ title: "Marc <b>wins</b>", link: "https://www.crash.net/a", summary: "Great sprint", source: "Crash.net", published: new Date().toISOString() }] };
     if (msg.type.endsWith("/transfers")) return { year: 2027, moves: [{ kind: "move", rider: "Francesco Bagnaia", number: "63", from: "Ducati Lenovo Team", to: "Aprilia Racing" }, { kind: "new", rider: "Pedro Acosta", to: "Ducati Lenovo Team" }, { kind: "out", rider: "Jorge Martin", from: "Aprilia Racing" }], headlines: [{ title: "Rookie signs for 2027", link: "https://www.crash.net/b", source: "Crash.net", published: new Date().toISOString() }] };
@@ -70,6 +71,7 @@ assert.match(html, /Latest sprint: Australian GP/, "latest sprint card");
 assert.match(html, /class="circuit" src="https:\/\/example.invalid\/map.png"/, "circuit picture");
 assert.doesNotMatch(html, /<b>Four<\/b>/, "html escaped");
 assert.match(html, /Star us on GitHub/, "github link");
+assert.match(html, /7 stars &middot; 2 forks/, "repo stats");
 assert.match(html, /Wikimedia Commons/, "image credit");
 assert.match(html, /British Superbikes/, "class chips");
 

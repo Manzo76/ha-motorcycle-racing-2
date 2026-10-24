@@ -664,7 +664,12 @@ class MotorcycleRacingPanel extends HTMLElement {
         <nav class="tabs">${TABS.map(([k, label]) => `<button data-act="tab" data-k="${k}" class="${k === this._tab ? "on" : ""}">${label}</button>`).join("")}</nav>
         ${view}
         <footer>
-          <a href="${PANEL_REPO}" target="_blank" rel="noopener">&#9733; Star us on GitHub</a>
+          <a href="${PANEL_REPO}" target="_blank" rel="noopener">&#9733; Star us on GitHub${(() => {
+            const st = this._fetch("repo_stats", { type: "motorcycle_racing/repo_stats" }, 3600000).data;
+            return st && st.stars !== undefined
+              ? ` &middot; ${esc(st.stars)} star${st.stars === 1 ? "" : "s"} &middot; ${esc(st.forks)} fork${st.forks === 1 ? "" : "s"}`
+              : "";
+          })()}</a>
           <button data-act="share">Share with friends</button>
           <a href="${PANEL_REPO}/issues" target="_blank" rel="noopener">Report a problem</a>
           <span class="credit made">Made by Manzo &middot; &copy; 2026 Manzo76. All rights reserved.</span>

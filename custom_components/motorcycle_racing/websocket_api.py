@@ -92,6 +92,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_transfers)
     websocket_api.async_register_command(hass, ws_teams)
     websocket_api.async_register_command(hass, ws_team_profile)
+    websocket_api.async_register_command(hass, ws_repo_stats)
     websocket_api.async_register_command(hass, ws_tv)
 
 
@@ -264,6 +265,12 @@ async def ws_team_profile(hass: HomeAssistant, connection, msg: dict[str, Any]) 
     """Wikipedia summary, picture and infobox facts for a team."""
     result = await _extras(hass).async_team_profile(msg.get("title"), msg["name"])
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/repo_stats"})
+@websocket_api.async_response
+async def ws_repo_stats(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    connection.send_result(msg["id"], await _extras(hass).async_repo_stats())
 
 
 @websocket_api.websocket_command(

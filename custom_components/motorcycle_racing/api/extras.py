@@ -64,6 +64,7 @@ MARKET_WORDS = re.compile(
     re.I,
 )
 
+REPO_API = "https://api.github.com/repos/Manzo76/ha-motorcycle-racing-2"
 NEWS_TTL = 15 * 60
 WIKI_TTL = 6 * 3600
 
@@ -294,6 +295,26 @@ class Extras:
 
         profile = await self._cached(f"team:{key}", WIKI_TTL, load)
         return profile or {}
+
+    # -- project stats -----------------------------------------------------
+
+    async def async_repo_stats(self) -> dict[str, Any]:
+        """Public GitHub counters (stars, forks, watchers). No user data involved."""
+        async def load():
+            raw = await self._get_text(REPO_API)
+            if not raw:
+                return None
+            try:
+                d = json.loads(raw)
+                return {
+                    "stars": int(d["stargazers_count"]),
+                    "forks": int(d["forks_count"]),
+                    "watchers": int(d.get("subscribers_count", 0)),
+                }
+            except (ValueError, KeyError, TypeError):
+                return None
+
+        return await self._cached("repo_stats", 3600, load) or {}
 
     # -- TV guide ----------------------------------------------------------
 
