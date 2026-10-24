@@ -97,7 +97,9 @@ class MotorcycleRacingPanel extends HTMLElement {
   async _refresh() {
     try {
       const res = await this._hass.callWS({ type: "motorcycle_racing/overview" });
-      this._data = res.series || [];
+      const order = ["motogp", "moto2", "moto3", "motoe", "worldsbk", "bsb"];
+      const rank = (k) => (order.indexOf(k) < 0 ? 99 : order.indexOf(k));
+      this._data = (res.series || []).slice().sort((a, b) => rank(a.key) - rank(b.key));
       this._error = null;
       if (!this._series() && this._data.length) this._cls = this._data[0].key;
     } catch (err) {
