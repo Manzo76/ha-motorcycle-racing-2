@@ -50,6 +50,7 @@ const hass = {
     calls.push(msg.type);
     if (msg.type.endsWith("overview")) return { series };
     if (msg.type.endsWith("event_results")) return { sessions: [{ name: "Race", kind: "race", results: rows }, { name: "Qualifying", kind: "qualifying", results: rows }] };
+    if (msg.type.endsWith("/records")) return { series: msg.series, source: "Wikipedia", tables: { premier_wins: [{ rank: 1, rider: "Valentino Rossi", value: 89 }], premier_sprints: [{ rank: 1, rider: "Marc Marquez", value: 23 }], all_titles: [{ rank: 1, rider: "Giacomo Agostini", value: 15 }] }, lap_records: { retrieved: "2026-10-24", note: "n", records: [{ gp: "Australia", circuit: "Phillip Island", time: "1:26.465", rider: "Fabio Quartararo", year: 2025 }] } };
     if (msg.type.endsWith("repo_stats")) return { stars: 7, forks: 2, watchers: 1 };
     if (msg.type.endsWith("latest_sprint")) return { event: { name: "Australian GP" }, sprint: { name: "Sprint", kind: "sprint", start: "2026-10-24T04:00:00+00:00", circuit: "Phillip Island", results: rows } };
     if (msg.type.endsWith("/news")) return { source: "Crash.net", items: [{ title: "Marc <b>wins</b>", link: "https://www.crash.net/a", summary: "Great sprint", source: "Crash.net", published: new Date().toISOString() }] };
@@ -95,6 +96,12 @@ assert.match(p.shadowRoot.innerHTML, /Race is live/, "live banner");
 
 p._tab = "tables"; p._render();
 assert.match(p.shadowRoot.innerHTML, /Ducati/, "tables");
+p._tab = "records"; p._afterNav(); await wait();
+html = p.shadowRoot.innerHTML;
+assert.match(html, /Most premier-class wins/, "records premier wins");
+assert.match(html, /Valentino Rossi/, "records rider");
+assert.match(html, /1:26\.465/, "lap record time");
+assert.match(html, /Most MotoGP sprint wins/, "sprint wins");
 p._tab = "history"; p._render();
 assert.match(p.shadowRoot.innerHTML, /past champions/, "history");
 

@@ -21,6 +21,7 @@ const TABS = [
   ["results", "Results"],
   ["tables", "Tables"],
   ["history", "Past champions"],
+  ["records", "Records"],
   ["team", "My Team"],
   ["news", "News"],
   ["transfers", "Transfers"],
@@ -432,6 +433,51 @@ class MotorcycleRacingPanel extends HTMLElement {
   }
 
 
+  _viewRecords(s) {
+    const e = this._fetch(`rec:${s.key}`, { type: "motorcycle_racing/records", series: s.key }, 1800000);
+    const st = this._status(e, "records");
+    if (st) return st;
+    const d = e.data || {};
+    const t = d.tables || {};
+    if (d.error || !Object.keys(t).length) return `<p class="muted">Records are not available right now.</p>`;
+    const board = (title, rows, unit) =>
+      rows && rows.length
+        ? `<section class="card"><h3>${esc(title)}</h3>${this._table(rows, [
+            { h: "Pos", cls: "n", f: (r) => esc(r.rank) },
+            { h: "Rider", f: (r) => `<b>${esc(r.rider)}</b>` },
+            { h: unit, cls: "n", f: (r) => esc(r.value) },
+          ])}</section>`
+        : "";
+    const premier = [
+      board("Most premier-class wins (500cc / MotoGP)", t.premier_wins, "Wins"),
+      board("Most premier-class poles", t.premier_poles, "Poles"),
+      board("Most MotoGP sprint wins", t.premier_sprints, "Sprints"),
+    ].join("");
+    const all = [
+      board("Most wins, all classes", t.all_wins, "Wins"),
+      board("Most podiums, all classes", t.all_podiums, "Podiums"),
+      board("Most world titles, all classes", t.all_titles, "Titles"),
+      board("Most poles, all classes", t.all_poles, "Poles"),
+      board("Most fastest laps, all classes", t.all_fastest_laps, "Laps"),
+    ].join("");
+    const lr = d.lap_records && d.lap_records.records;
+    const laps = lr && lr.length
+      ? `<section class="card wide"><h3>All-time lap records (premier class)</h3>${this._table(lr, [
+          { h: "Grand Prix", f: (r) => `<b>${esc(r.gp)}</b>` },
+          { h: "Circuit", cls: "hide-narrow", f: (r) => esc(r.circuit) },
+          { h: "Time", cls: "n", f: (r) => esc(r.time) },
+          { h: "Rider", f: (r) => esc(r.rider) },
+          { h: "Year", cls: "n", f: (r) => esc(r.year) },
+        ])}<p class="muted small">${esc(d.lap_records.note || "")} Dated ${esc(d.lap_records.retrieved || "")}.</p></section>`
+      : "";
+    const note =
+      s.key === "motogp"
+        ? ""
+        : `<p class="muted">There are no live per-class record lists for ${esc(s.name)}, so these are all-time records across every Grand Prix class. Premier-class records and lap records are on the MotoGP tab.</p>`;
+    return `${note}<div class="grid">${premier}${all}</div>${laps}
+      <p class="muted small">Records read live from ${esc(d.source || "Wikipedia")} and refreshed every few hours. Lap records are a curated, dated list.</p>`;
+  }
+
   _viewNews(s) {
     const e = this._fetch(`news:${s.key}`, { type: "motorcycle_racing/news", series: s.key }, 900000);
     const st = this._status(e, "news");
@@ -587,6 +633,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         results: "_viewResults",
         tables: "_viewTables",
         history: "_viewHistory",
+        records: "_viewRecords",
         team: "_viewTeam",
         news: "_viewNews",
         transfers: "_viewTransfers",
@@ -624,6 +671,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         th { text-align:left; font-weight:700; opacity:.95; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; padding:6px 8px; }
         td { padding:7px 8px; border-top:1px solid rgba(255,255,255,.07); }
         .n { text-align:right; white-space:nowrap; } td i { opacity:.8; font-style:normal; }
+        .card.wide { margin-top:14px; }
         img.circuit { display:block; max-width:100%; max-height:220px; margin:10px auto 0; background:rgba(255,255,255,.92); border-radius:10px; padding:8px; box-sizing:border-box; }
         .podium { display:flex; gap:8px; align-items:flex-end; justify-content:center; margin:10px 0 12px; }
         .pod { flex:1; max-width:170px; text-align:center; padding:8px 6px; border-radius:10px 10px 0 0; background:rgba(255,255,255,.07); }

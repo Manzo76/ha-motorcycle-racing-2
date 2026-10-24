@@ -187,6 +187,25 @@ check("real: nested spans", [e.rider for e in real if "Giannantonio" in e.rider]
 check("real: two-name team cell uses the first", [e.team for e in real if e.rider == "Johann Zarco"], ["Castrol Honda LCR"])
 check("real: no citation text", any("[" in e.rider for e in real), False)
 
+
+# ---- records ----
+rec = importlib.import_module("mr.api.records")
+RECORDS_HTML = (
+    '<table class="wikitable"><tr><th>Rider</th><th>Entries</th></tr><tr><td>X</td><td>9</td></tr></table>'
+    '<table class="wikitable"><tr><th>Rank</th><th>Country</th><th>Rider</th><th>Wins</th><th>Seasons</th></tr>'
+    '<tr><td>1</td><td><img alt="x"></td><td><a href="/wiki/Valentino_Rossi">Valentino Rossi</a>*<sup>[1]</sup></td><td>89</td><td>2000-2021</td></tr>'
+    '<tr><td>2</td><td></td><td>Marc M\u00e1rquez*</td><td>1,078</td><td>2013-</td></tr></table>'
+    '<table class="wikitable"><tr><th>Rider</th><th>Season(s)</th><th>Wins</th></tr><tr><td>Z</td><td>1</td><td>99</td></tr></table>'
+)
+rows = rec.parse_ranking(RECORDS_HTML, "wins")
+check("records first matching table", [r["rider"] for r in rows], ["Valentino Rossi", "Marc M\u00e1rquez"])
+check("records counts", [r["value"] for r in rows], [89, 1078])
+check("records ranks", [r["rank"] for r in rows], [1, 2])
+check("records missing column", rec.parse_ranking(RECORDS_HTML, "poles"), [])
+laps = json.loads((ROOT / "data" / "lap_records.json").read_text(encoding="utf-8"))
+check("lap records present", len(laps["records"]) >= 20, True)
+check("lap records have times", all(":" in r["time"] for r in laps["records"]), True)
+
 if failures:
     print("FAILURES:")
     for line in failures:

@@ -95,6 +95,7 @@ Installing the integration adds a **Motorcycle Racing** entry to the Home Assist
 - **Results** - choose any finished race weekend and session
 - **Tables** - rider and team championship tables
 - **Past champions** - the class history, newest season first
+- **Records** - all-time most wins, poles, podiums, titles, fastest laps and MotoGP sprint wins (read live from Wikipedia), plus the premier-class lap record at every circuit (a curated, dated list)
 
 Times follow your Home Assistant profile time zone. Background photo: CC0 / public domain, from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Motor-Sport-Museum_am_Hockenheimring,_unidentified_motorcycle,_pic-005.JPG).
 

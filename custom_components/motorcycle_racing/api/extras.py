@@ -24,6 +24,7 @@ from typing import Any
 
 import aiohttp
 
+from .records import PAGES, parse_ranking
 from .wikitable import Entry, compute_moves, norm, parse_entry_list, parse_infobox
 
 _LOGGER = logging.getLogger(__name__)
@@ -315,6 +316,49 @@ class Extras:
                 return None
 
         return await self._cached("repo_stats", 3600, load) or {}
+
+    # -- records -----------------------------------------------------------
+
+    async def _records_page(self, key: str) -> dict[str, list[dict[str, Any]]] | None:
+        title, columns = PAGES[key]
+
+        async def load():
+            html = await self._wiki_html(title)
+            if not html:
+                return None
+            loop = asyncio.get_running_loop()
+
+            def work():
+                return {name: parse_ranking(html, col) for name, col in columns.items()}
+
+            return await loop.run_in_executor(None, work)
+
+        return await self._cached(f"records:{key}", WIKI_TTL, load)
+
+    def _load_lap_records(self) -> dict[str, Any]:
+        try:
+            return json.loads((self._data_dir / "lap_records.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as err:
+            _LOGGER.warning("Could not read lap_records.json: %s", err)
+            return {}
+
+    async def async_records(self, series: str) -> dict[str, Any]:
+        """All-time record tables. Premier-class lists only exist for MotoGP."""
+        keys = ["all"] + (["wins", "poles", "sprints"] if series == "motogp" else [])
+        pages = await asyncio.gather(*(self._records_page(k) for k in keys))
+        tables: dict[str, list[dict[str, Any]]] = {}
+        for key, page in zip(keys, pages):
+            if page:
+                for name, rows in page.items():
+                    if rows:
+                        tables[f"{'premier_' if key != 'all' else 'all_'}{name}"] = rows
+        out: dict[str, Any] = {"series": series, "tables": tables, "source": "Wikipedia"}
+        if not tables:
+            out["error"] = True
+        if series == "motogp":
+            loop = asyncio.get_running_loop()
+            out["lap_records"] = await loop.run_in_executor(None, self._load_lap_records)
+        return out
 
     # -- TV guide ----------------------------------------------------------
 

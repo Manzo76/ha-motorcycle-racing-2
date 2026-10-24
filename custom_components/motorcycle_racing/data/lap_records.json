@@ -1,0 +1,167 @@
+{
+ "class": "motogp",
+ "retrieved": "2026-10-24",
+ "note": "All-time premier-class lap records (fastest lap ever set, usually in qualifying), curated and dated. Brazil's record is from the 500cc era.",
+ "sources": [
+  {
+   "name": "SpotvNow - all-time lap records at MotoGP 2026 circuits",
+   "url": "https://www.spotvnow.com/read/from-assen-to-sepang-all-time-lap-records-at-motogp-2026-circuits/"
+  }
+ ],
+ "records": [
+  {
+   "gp": "Thailand",
+   "circuit": "Chang International Circuit",
+   "time": "1:28.700",
+   "rider": "Francesco Bagnaia",
+   "year": 2024
+  },
+  {
+   "gp": "Brazil",
+   "circuit": "Autódromo Internacional Ayrton Senna",
+   "time": "1:25.440",
+   "rider": "Wayne Rainey",
+   "year": 1989
+  },
+  {
+   "gp": "Americas",
+   "circuit": "Circuit of the Americas",
+   "time": "2:00.864",
+   "rider": "Maverick Viñales",
+   "year": 2024
+  },
+  {
+   "gp": "Qatar",
+   "circuit": "Lusail International Circuit",
+   "time": "1:50.499",
+   "rider": "Marc Márquez",
+   "year": 2025
+  },
+  {
+   "gp": "Spain",
+   "circuit": "Circuito de Jerez - Ángel Nieto",
+   "time": "1:35.610",
+   "rider": "Fabio Quartararo",
+   "year": 2025
+  },
+  {
+   "gp": "France",
+   "circuit": "Bugatti Circuit, Le Mans",
+   "time": "1:29.324",
+   "rider": "Fabio Quartararo",
+   "year": 2025
+  },
+  {
+   "gp": "Catalonia",
+   "circuit": "Circuit de Barcelona-Catalunya",
+   "time": "1:37.536",
+   "rider": "Álex Márquez",
+   "year": 2025
+  },
+  {
+   "gp": "Italy",
+   "circuit": "Autodromo del Mugello",
+   "time": "1:44.169",
+   "rider": "Marc Márquez",
+   "year": 2025
+  },
+  {
+   "gp": "Hungary",
+   "circuit": "Balaton Park Circuit",
+   "time": "1:36.518",
+   "rider": "Marc Márquez",
+   "year": 2025
+  },
+  {
+   "gp": "Czech Republic",
+   "circuit": "Brno Circuit",
+   "time": "1:52.303",
+   "rider": "Francesco Bagnaia",
+   "year": 2025
+  },
+  {
+   "gp": "Netherlands",
+   "circuit": "TT Circuit Assen",
+   "time": "1:30.540",
+   "rider": "Francesco Bagnaia",
+   "year": 2024
+  },
+  {
+   "gp": "Germany",
+   "circuit": "Sachsenring",
+   "time": "1:19.071",
+   "rider": "Fabio Di Giannantonio",
+   "year": 2025
+  },
+  {
+   "gp": "Great Britain",
+   "circuit": "Silverstone Circuit",
+   "time": "1:57.233",
+   "rider": "Fabio Quartararo",
+   "year": 2025
+  },
+  {
+   "gp": "Aragon",
+   "circuit": "MotorLand Aragón",
+   "time": "1:45.704",
+   "rider": "Marc Márquez",
+   "year": 2025
+  },
+  {
+   "gp": "San Marino",
+   "circuit": "Misano World Circuit Marco Simoncelli",
+   "time": "1:30.031",
+   "rider": "Francesco Bagnaia",
+   "year": 2024
+  },
+  {
+   "gp": "Austria",
+   "circuit": "Red Bull Ring",
+   "time": "1:27.748",
+   "rider": "Jorge Martín",
+   "year": 2024
+  },
+  {
+   "gp": "Japan",
+   "circuit": "Mobility Resort Motegi",
+   "time": "1:42.911",
+   "rider": "Francesco Bagnaia",
+   "year": 2025
+  },
+  {
+   "gp": "Indonesia",
+   "circuit": "Mandalika International Street Circuit",
+   "time": "1:28.832",
+   "rider": "Marco Bezzecchi",
+   "year": 2025
+  },
+  {
+   "gp": "Australia",
+   "circuit": "Phillip Island Grand Prix Circuit",
+   "time": "1:26.465",
+   "rider": "Fabio Quartararo",
+   "year": 2025
+  },
+  {
+   "gp": "Malaysia",
+   "circuit": "Petronas Sepang International Circuit",
+   "time": "1:56.337",
+   "rider": "Francesco Bagnaia",
+   "year": 2024
+  },
+  {
+   "gp": "Portugal",
+   "circuit": "Algarve International Circuit",
+   "time": "1:37.226",
+   "rider": "Marc Márquez",
+   "year": 2023
+  },
+  {
+   "gp": "Valencia",
+   "circuit": "Circuit Ricardo Tormo",
+   "time": "1:28.809",
+   "rider": "Marco Bezzecchi",
+   "year": 2025
+  }
+ ]
+}
