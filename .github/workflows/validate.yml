@@ -23,13 +23,15 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # "license": HACS only accepts SPDX-recognised licences; this project is
+          # deliberately all-rights-reserved (custom repository only).
           # "brands" requires a merged PR against home-assistant/brands (a
           # separate repo, reviewed by HA maintainers) - out of scope for
           # this repo's own CI. hacs/action wants a SPACE-separated list
           # here, not comma-separated - a comma makes the whole string one
           # unmatched token and nothing gets ignored. Topics are already set
           # on the GitHub repo itself, so that check passes on its own now.
-          ignore: brands
+          ignore: brands license
 
   python:
     name: Syntax
@@ -49,6 +51,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      - run: pip install aiohttp
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
