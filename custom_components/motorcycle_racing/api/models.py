@@ -161,3 +161,66 @@ class SeriesData:
     logo: str | None = None
     fanart: str | None = None
     attribution: str | None = None
+    # Set by apply_season_state() once the calendar has been fully raced.
+    season_over: bool = False
+    next_season_event: RaceEvent | None = None
+    champion_rider: StandingRow | None = None
+    champion_team: StandingRow | None = None
+
+
+# A gap this long between the last round raced and the next one on the calendar
+# means the next one belongs to a new season (mid-season breaks are ~6 weeks).
+SEASON_GAP_DAYS = 100
+
+
+def _season_year(season: str | None) -> int | None:
+    """Return the year for a plain "2026" season label, else None."""
+    text = (season or "").strip()
+    return int(text) if len(text) == 4 and text.isdigit() else None
+
+
+def apply_season_state(data: SeriesData, now: datetime) -> SeriesData:
+    """Work out whether the season has finished and, if so, who won it.
+
+    Providers return the *next* event on the calendar, which after the final
+    round is the opening round of next season (e.g. British Superbikes
+    showing "next race in 189 days"). When the season is complete we move that
+    event to ``next_season_event`` so "next race" and "next session" read as
+    finished, and expose the champions from the final standings.
+    """
+    last = data.last_event
+    nxt = data.next_event
+
+    if nxt is None:
+        # Nothing left on the calendar and at least one round has been raced.
+        data.season_over = bool(last)
+    elif last is not None:
+        last_end = last.end or last.start
+        if last_end and nxt.start:
+            gap_days = (nxt.start - last_end).days
+            data.season_over = gap_days > SEASON_GAP_DAYS
+        year = _season_year(data.season)
+        if (
+            not data.season_over
+            and year is not None
+            and nxt.start is not None
+            and nxt.start.year > year
+            and last.start is not None
+            and last.start.year == year
+        ):
+            data.season_over = True
+
+    if not data.season_over:
+        return data
+
+    if nxt is not None:
+        data.next_season_event = nxt
+    data.next_event = None
+    data.next_session = None
+    data.next_session_event = None
+    data.live_session = None
+    if data.rider_standings:
+        data.champion_rider = data.rider_standings[0]
+    if data.team_standings:
+        data.champion_team = data.team_standings[0]
+    return data

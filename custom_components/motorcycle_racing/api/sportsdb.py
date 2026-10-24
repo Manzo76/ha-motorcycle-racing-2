@@ -65,7 +65,7 @@ _STOP_MARKER = re.compile(r"^-{3,}$|standings", re.I)
 
 def _clean_field(value: str) -> str:
     """Strip TheSportsDB's leading "/" field-separator artifact and whitespace."""
-    return value.strip(" \t\-–/")
+    return value.strip(" \t\x2d–/")
 
 
 def _split_results(blob: str | None) -> list[ResultRow]:
@@ -84,7 +84,7 @@ def _split_results(blob: str | None) -> list[ResultRow]:
             continue
         position, remainder = match.groups()
         if "\t" in raw_line:
-            fields = [_clean_field(p) for p in _TAB_SPLIT.split(remainder) if p.strip(" \t\-–/")]
+            fields = [_clean_field(p) for p in _TAB_SPLIT.split(remainder) if p.strip(" \t\x2d–/")]
         else:
             fields = [_clean_field(p) for p in _FIELD_SPLIT.split(remainder, maxsplit=1)]
         if not fields:
@@ -131,7 +131,7 @@ def _split_standings_from_text(blob: str | None) -> list[StandingRow]:
         if not match:
             continue
         position, remainder = match.groups()
-        fields = [_clean_field(p) for p in _SLASH_FIELD_SPLIT.split(remainder) if p.strip(" \t\-–/")]
+        fields = [_clean_field(p) for p in _SLASH_FIELD_SPLIT.split(remainder) if p.strip(" \t\x2d–/")]
         if not fields:
             continue
         name = fields[0]

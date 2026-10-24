@@ -102,6 +102,24 @@ through the device. Everything else is optional:
 | `show_sessions` | true | Weekend schedule strip |
 | `show_results` | true | Last race classification |
 | `show_standings` | true | Championship table |
+| `show_podium` | true | Gold/silver/bronze podium for the last race |
+| `show_icon` | true | The brand icon in the card header |
+| `time_zone` | `local` | `local` (your device / HA profile), `server`, any IANA zone such as `Europe/London`, or `GMT` |
+| `date_locale` | HA language | Locale used to format dates, e.g. `en-GB` |
+
+**Local time.** Every time on every card is shown in your own time zone,
+following your Home Assistant profile (device zone, or server zone if you have
+chosen that), including summer/winter clock changes. Set `time_zone` to pin a
+card to a fixed zone.
+
+**Live sessions.** While a session is running the card shows a LIVE banner and
+the start lights go green.
+
+**Season complete.** When a series has run its final round, "Next race" reads
+*Season complete* instead of counting down to next year's opener. The card shows
+the champion rider and team, the final standings and the date next season
+starts. The sensors expose `season_over`, `champion`, `champion_team` and
+`next_season_start` for automations.
 
 The countdown is a start-light gantry: the lamps fill one per hour over the last
 five hours before the session, and go out when it starts. Times, gaps and points

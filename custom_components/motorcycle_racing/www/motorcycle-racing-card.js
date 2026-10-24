@@ -37,6 +37,9 @@ const ENTITY_KEYS = [
   "calendar",
 ].sort((a, b) => b.length - a.length);
 
+// Home Assistant serves a custom integration's brand/ folder at this URL.
+const BRAND_ICON_URL = "/api/brands/integration/motorcycle_racing/icon.png";
+
 const SESSION_ICONS = {
   practice: "mdi:timer-sand",
   qualifying: "mdi:stopwatch-outline",
@@ -47,32 +50,78 @@ const SESSION_ICONS = {
   other: "mdi:motorbike",
 };
 
-function fmtTime(iso, locale) {
+/**
+ * Time formatting. Every time is shown in the *viewer's* time zone by default:
+ * the browser's local zone, or the server zone when the user's HA profile says
+ * "Use server time zone". Override per card with `time_zone`:
+ *   time_zone: local            (default)
+ *   time_zone: server           (Home Assistant's configured zone)
+ *   time_zone: Europe/London    (any IANA zone)
+ *   time_zone: GMT              (the old fixed-GMT behaviour)
+ */
+function timeCtx(hass, config) {
+  const cfg = config && config.time_zone ? String(config.time_zone) : "";
+  let tz;
+  if (!cfg || /^(local|auto)$/i.test(cfg)) {
+    tz = hass && hass.locale && hass.locale.time_zone === "server"
+      ? hass.config && hass.config.time_zone
+      : undefined;
+  } else if (/^(gmt|utc)$/i.test(cfg)) {
+    tz = "GMT";
+  } else if (/^server$/i.test(cfg)) {
+    tz = hass && hass.config ? hass.config.time_zone : undefined;
+  } else {
+    tz = cfg;
+  }
+  const fmt = hass && hass.locale ? hass.locale.time_format : undefined;
+  return {
+    locale: (config && config.date_locale) || (hass && hass.locale && hass.locale.language) || undefined,
+    tz,
+    hour12: fmt === "12" ? true : fmt === "24" ? false : undefined,
+  };
+}
+
+function safeFormat(date, ctx, opts) {
+  const base = { ...opts, hour12: ctx.hour12 };
+  try {
+    return date.toLocaleString(ctx.locale, { ...base, timeZone: ctx.tz });
+  } catch (err) {
+    // Unknown IANA name in the config: fall back to the browser's zone.
+    return date.toLocaleString(ctx.locale, base);
+  }
+}
+
+function fmtTime(iso, ctx) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(locale || undefined, {
+  return safeFormat(d, ctx || {}, {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "GMT",
     timeZoneName: "short",
   });
 }
 
-function fmtDateTime(iso, locale) {
+function fmtDateTime(iso, ctx) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(locale || undefined, {
+  return safeFormat(d, ctx || {}, {
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "GMT",
     timeZoneName: "short",
   });
+}
+
+function fmtDate(iso, ctx) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return safeFormat(d, ctx || {}, { day: "numeric", month: "long", year: "numeric" });
 }
 
 function relative(iso) {
@@ -203,14 +252,20 @@ class MotorcycleRacingCard extends HTMLElement {
     return st ? st.attributes[attr] : undefined;
   }
 
-  _renderGantry(nextSession, nextSessionTimeState, sessionLiveOn) {
+  _renderGantry(nextSession, nextSessionTimeState, sessionLiveOn, opts = {}) {
     const startIso = nextSessionTimeState ? nextSessionTimeState.state : null;
     let lit = 0;
+    let go = false;
     let label = "No session scheduled";
-    if (sessionLiveOn) {
+    if (opts.seasonOver) {
+      label = opts.nextSeasonIso
+        ? `Season complete · back ${fmtDate(opts.nextSeasonIso, opts.ctx)}`
+        : "Season complete";
+    } else if (sessionLiveOn) {
       lit = 5;
-      label = "Session live";
-    } else if (startIso) {
+      go = true;
+      label = opts.liveName ? `${opts.liveName} is live` : "Session live";
+    } else if (startIso && !Number.isNaN(new Date(startIso).getTime())) {
       const hoursUntil = (new Date(startIso).getTime() - Date.now()) / 3600000;
       if (hoursUntil <= 0) {
         lit = 5;
@@ -223,13 +278,63 @@ class MotorcycleRacingCard extends HTMLElement {
       }
     }
     const lamps = Array.from({ length: 5 }, (_, i) =>
-      `<span class="lamp ${i < lit ? "lit" : ""}"></span>`
+      `<span class="lamp ${i < lit ? (go ? "go" : "lit") : ""}"></span>`
     ).join("");
     return `
       <div class="gantry">
         <div class="lamps">${lamps}</div>
         <div class="gantry-label">${esc(label)}</div>
       </div>`;
+  }
+
+  _renderLiveBanner(sessionName, eventName) {
+    return `
+      <div class="live-banner">
+        <span class="live-dot"></span>
+        <div class="live-text">
+          <div class="live-title">Live now</div>
+          <div class="live-sub">${esc([sessionName, eventName].filter(Boolean).join(" · "))}</div>
+        </div>
+      </div>`;
+  }
+
+  _renderChampion(season, riderState, teamState) {
+    const a = riderState ? riderState.attributes : {};
+    if (!a.champion && !(teamState && teamState.attributes.champion_team)) return "";
+    const bits = [];
+    if (a.champion_team) bits.push(a.champion_team);
+    if (a.champion_points != null) bits.push(`${a.champion_points} pts`);
+    if (a.champion_wins != null) bits.push(`${a.champion_wins} wins`);
+    const teamChamp = teamState ? teamState.attributes.champion_team : null;
+    return `
+      <div class="champion">
+        <div class="champ-trophy"><ha-icon icon="mdi:trophy-award"></ha-icon></div>
+        <div class="champ-body">
+          <div class="champ-label">${esc(season ? `${season} champion` : "Champion")}</div>
+          ${a.champion ? `<div class="champ-name">${a.champion_number != null ? `<span class="champ-num">#${esc(a.champion_number)}</span>` : ""}${esc(a.champion)}</div>` : ""}
+          ${bits.length ? `<div class="champ-meta">${esc(bits.join(" · "))}</div>` : ""}
+          ${teamChamp ? `<div class="champ-team"><ha-icon icon="mdi:account-group"></ha-icon>Team champions: ${esc(teamChamp)}</div>` : ""}
+        </div>
+      </div>`;
+  }
+
+  _renderPodium(podium, ctx) {
+    if (!podium || !podium.length) return "";
+    const byPos = {};
+    for (const row of podium) if (row && row.position != null) byPos[row.position] = row;
+    const slot = (pos, cls) => {
+      const r = byPos[pos];
+      if (!r) return "";
+      const detail = pos === 1 ? r.time || "" : r.gap || r.time || "";
+      return `
+        <div class="pod ${cls}">
+          <div class="who">${esc(r.rider || "")}</div>
+          <div class="pteam">${esc(r.team || r.constructor || "")}</div>
+          ${detail ? `<div class="ptime">${esc(detail)}</div>` : ""}
+          <div class="step"><span>${pos}</span></div>
+        </div>`;
+    };
+    return `<div class="podium">${slot(2, "p2")}${slot(1, "p1")}${slot(3, "p3")}</div>`;
   }
 
   _renderCircuit(label, event, resultLine) {
@@ -257,7 +362,7 @@ class MotorcycleRacingCard extends HTMLElement {
       </div>`;
   }
 
-  _renderSessions(sessions) {
+  _renderSessions(sessions, ctx) {
     if (!sessions || !sessions.length) return "";
     const nextStart = this._attr("next_session", "start");
     const rows = sessions
@@ -268,7 +373,7 @@ class MotorcycleRacingCard extends HTMLElement {
           <div class="session-row ${isNext ? "next" : ""}">
             <ha-icon icon="${icon}"></ha-icon>
             <span class="session-name">${esc(s.name)}</span>
-            <span class="session-time">${esc(fmtTime(s.start, this._config.date_locale))}</span>
+            <span class="session-time">${esc(fmtTime(s.start, ctx))}</span>
           </div>`;
       })
       .join("");
@@ -297,13 +402,13 @@ class MotorcycleRacingCard extends HTMLElement {
       </table>`;
   }
 
-  _renderStandingsTable(rows, limit) {
+  _renderStandingsTable(rows, limit, champion) {
     if (!rows || !rows.length) return "";
     const shown = rows.slice(0, limit || 5);
     const body = shown
       .map(
-        (r) => `
-        <tr>
+        (r, i) => `
+        <tr class="${champion && i === 0 ? "champ-row" : ""}">
           <td class="pos">${esc(r.position ?? "")}</td>
           <td class="name">${esc(r.name || "")}</td>
           <td class="team">${esc(r.team || "")}</td>
@@ -339,6 +444,7 @@ class MotorcycleRacingCard extends HTMLElement {
       return;
     }
 
+    const ctx = timeCtx(this._hass, config);
     const nextRace = this._state("next_race");
     const lastRace = this._state("last_race");
     const nextSession = this._state("next_session");
@@ -353,73 +459,144 @@ class MotorcycleRacingCard extends HTMLElement {
     const showResults = config.show_results !== false;
     const showStandings = config.show_standings !== false;
     const showCircuit = config.show_circuit !== false;
+    const showPodium = config.show_podium !== false;
+    const showIcon = config.show_icon !== false;
 
-    const nextEvent = nextRace
-      ? { ...nextRace.attributes, name: nextRace.state }
+    const nextAttrs = nextRace ? nextRace.attributes : {};
+    const seasonOver = Boolean(nextAttrs.season_over);
+    const live = Boolean(sessionLive && sessionLive.state === "on") && !seasonOver;
+    const season = nextAttrs.season || (lastRace && lastRace.attributes.season) || "";
+
+    const nextEvent = nextRace && !seasonOver
+      ? { ...nextAttrs, name: nextRace.state }
       : null;
     const lastEvent = lastRace
       ? { ...lastRace.attributes, name: lastRace.attributes.event }
       : null;
+    const nextSeasonEvent = seasonOver && nextAttrs.next_season_event
+      ? {
+          name: nextAttrs.next_season_event,
+          circuit: nextAttrs.next_season_circuit,
+          country: nextAttrs.next_season_country,
+          poster: nextAttrs.next_season_poster,
+        }
+      : null;
 
     const badges = [];
-    if (raceWeekend && raceWeekend.state === "on") badges.push("Race weekend");
-    if (sessionLive && sessionLive.state === "on") badges.push("LIVE");
+    if (seasonOver) badges.push("Season complete");
+    else if (raceWeekend && raceWeekend.state === "on") badges.push("Race weekend");
+    if (live) badges.push("LIVE");
+
+    const liveName = live
+      ? (sessionLive.attributes.session || (nextSession && nextSession.state) || "")
+      : "";
+
+    const iconHtml = showIcon
+      ? `<img class="brand" src="${BRAND_ICON_URL}" alt="" /><span class="dot" hidden></span>`
+      : `<span class="dot"></span>`;
 
     let html = `
-      <ha-card>
+      <ha-card class="${live ? "is-live" : ""} ${seasonOver ? "is-over" : ""}">
         <div class="header">
           <div class="title-row">
-            <span class="dot"></span>
+            ${iconHtml}
             <span class="title">${esc(title)}</span>
             ${badges.map((b) => `<span class="badge ${b === "LIVE" ? "live" : ""}">${esc(b)}</span>`).join("")}
           </div>
         </div>
         <div class="card-content">`;
 
-    if (showCircuit && (nextEvent || lastEvent)) {
-      const resultLine = lastRace && lastRace.attributes.winner
+    if (live) {
+      html += this._renderLiveBanner(liveName, nextEvent && nextEvent.name);
+    }
+
+    if (seasonOver) {
+      html += this._renderChampion(season, riderStandings, teamStandings);
+    }
+
+    if (showCircuit && (nextEvent || lastEvent || nextSeasonEvent)) {
+      const winnerLine = lastRace && lastRace.attributes.winner
         ? `Winner: ${lastRace.attributes.winner}`
         : undefined;
+      const rightCard = seasonOver
+        ? this._renderCircuit(
+            "Next season",
+            nextSeasonEvent,
+            nextAttrs.next_season_start
+              ? `${relative(nextAttrs.next_season_start)} · ${fmtDate(nextAttrs.next_season_start, ctx)}`
+              : undefined
+          )
+        : this._renderCircuit(
+            "Next round",
+            nextEvent,
+            nextEvent ? relative(nextEvent.race_start || nextEvent.start) : undefined
+          );
       html += `<div class="circuits">
-        ${this._renderCircuit("Last round", lastEvent, resultLine)}
-        ${this._renderCircuit("Next round", nextEvent, nextEvent ? relative(nextEvent.race_start || nextEvent.start) : undefined)}
+        ${this._renderCircuit(seasonOver ? "Final round" : "Last round", lastEvent, showPodium ? undefined : winnerLine)}
+        ${rightCard}
       </div>`;
     }
 
     if (showGantry) {
-      html += this._renderGantry(nextSession, nextSessionTime, sessionLive && sessionLive.state === "on");
+      html += this._renderGantry(nextSession, nextSessionTime, live, {
+        seasonOver,
+        nextSeasonIso: nextAttrs.next_season_start,
+        liveName,
+        ctx,
+      });
     }
 
     if (showSessions && nextEvent && nextEvent.sessions) {
-      html += this._renderSessions(nextEvent.sessions);
+      html += this._renderSessions(nextEvent.sessions, ctx);
     }
 
     if (showResults && lastRace) {
       const rows = lastRace.attributes.classification || [];
+      const podium = lastRace.attributes.podium || rows.slice(0, 3);
+      const usePodium = showPodium && podium.length >= 3;
+      const tableRows = usePodium ? rows.slice(3, config.results_rows || 6) : rows;
+      const heading = seasonOver ? "Final race" : "Last race";
       html += `<div class="section">
-        <div class="section-title">Last race${lastEvent && lastEvent.name ? ` · ${esc(lastEvent.name)}` : ""}</div>
-        ${this._renderResultsTable(rows, config.results_rows) || `<div class="empty-row">No classification yet</div>`}
+        <div class="section-title">${heading}${lastEvent && lastEvent.name ? ` · ${esc(lastEvent.name)}` : ""}</div>
+        ${usePodium ? this._renderPodium(podium, ctx) : ""}
+        ${
+          (usePodium && !tableRows.length)
+            ? ""
+            : this._renderResultsTable(tableRows, usePodium ? tableRows.length : config.results_rows) ||
+              `<div class="empty-row">No classification yet</div>`
+        }
       </div>`;
     }
 
     if (showStandings && riderStandings) {
       const rows = riderStandings.attributes.standings || [];
       html += `<div class="section">
-        <div class="section-title">Championship</div>
-        ${this._renderStandingsTable(rows, config.standings_rows) || `<div class="empty-row">No standings yet</div>`}
+        <div class="section-title">${seasonOver ? `${season ? `${esc(season)} ` : ""}final standings` : "Championship"}</div>
+        ${this._renderStandingsTable(rows, config.standings_rows, seasonOver) || `<div class="empty-row">No standings yet</div>`}
       </div>`;
 
       const teamRows = teamStandings ? teamStandings.attributes.standings || [] : [];
       if (teamRows.length) {
         html += `<div class="section">
-          <div class="section-title">Teams</div>
-          ${this._renderStandingsTable(teamRows, config.standings_rows)}
+          <div class="section-title">${seasonOver ? "Team standings" : "Teams"}</div>
+          ${this._renderStandingsTable(teamRows, config.standings_rows, seasonOver)}
         </div>`;
       }
     }
 
     html += `</div></ha-card>`;
     this.shadowRoot.innerHTML = `<style>${this._css(accent)}</style>${html}`;
+
+    // Fall back to the coloured dot if the brand icon isn't available (older
+    // HA, or the integration was installed before it shipped one).
+    const img = this.shadowRoot.querySelector("img.brand");
+    if (img) {
+      img.addEventListener("error", () => {
+        img.remove();
+        const dot = this.shadowRoot.querySelector(".title-row .dot");
+        if (dot) dot.hidden = false;
+      });
+    }
   }
 
   _css(accent) {
@@ -504,13 +681,75 @@ class MotorcycleRacingCard extends HTMLElement {
       table.results td.pos { color: var(--accent); font-weight: 700; width: 1.6em; }
       table.results td.num { text-align: right; white-space: nowrap; }
       .empty-row { font-size: 0.85em; color: var(--secondary-text-color); }
+
+      /* header brand icon */
+      .brand {
+        width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+        background: #fff; object-fit: cover;
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
+      }
+      .dot[hidden] { display: none; }
+
+      /* live session */
+      ha-card.is-live { box-shadow: 0 0 0 1px #d6001c, 0 0 18px rgba(214, 0, 28, 0.35); }
+      .live-banner {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 12px; margin-bottom: 14px; border-radius: 10px; color: #fff;
+        background: linear-gradient(100deg, #d6001c, color-mix(in srgb, var(--accent) 60%, #111));
+      }
+      .live-dot {
+        width: 12px; height: 12px; border-radius: 50%; background: #fff; flex-shrink: 0;
+        box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
+        animation: ring 1.6s ease-out infinite;
+      }
+      @keyframes ring {
+        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+        100% { box-shadow: 0 0 0 12px rgba(255,255,255,0); }
+      }
+      .live-title { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 800; opacity: 0.9; }
+      .live-sub { font-size: 1em; font-weight: 700; line-height: 1.2; }
+      .lamp.go { background: #1fd65f; opacity: 1; box-shadow: 0 0 10px #1fd65f; animation: pulse 1.6s ease-in-out infinite; }
+
+      /* season champion */
+      .champion {
+        display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+        padding: 12px 14px; border-radius: 12px;
+        background: linear-gradient(120deg, color-mix(in srgb, #ffd700 22%, transparent), color-mix(in srgb, var(--accent) 16%, transparent));
+        border: 1px solid color-mix(in srgb, #ffd700 45%, transparent);
+      }
+      .champ-trophy { --mdc-icon-size: 38px; color: #e6b800; display: flex; }
+      .champ-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; color: var(--secondary-text-color); }
+      .champ-name { font-size: 1.3em; font-weight: 800; line-height: 1.15; }
+      .champ-num { color: var(--accent); margin-right: 6px; font-weight: 700; }
+      .champ-meta { font-size: 0.85em; color: var(--secondary-text-color); margin-top: 1px; }
+      .champ-team { font-size: 0.82em; margin-top: 6px; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+      .champ-team ha-icon { --mdc-icon-size: 16px; color: var(--accent); }
+      tr.champ-row td { font-weight: 700; }
+      tr.champ-row td.pos { color: #e6b800; }
+
+      /* podium */
+      .podium { display: flex; align-items: flex-end; gap: 8px; margin: 6px 0 10px 0; }
+      .pod { flex: 1 1 0; min-width: 0; text-align: center; }
+      .pod .who { font-size: 0.82em; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pod .pteam { font-size: 0.68em; color: var(--secondary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pod .ptime { font-size: 0.72em; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; margin-top: 1px; }
+      .pod .step {
+        margin-top: 6px; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1.5em; color: rgba(0,0,0,0.65);
+      }
+      .pod.p1 .step { height: 62px; background: linear-gradient(#ffe36a, #d4a900); }
+      .pod.p2 .step { height: 46px; background: linear-gradient(#f0f0f0, #a9adb3); }
+      .pod.p3 .step { height: 34px; background: linear-gradient(#e8b27c, #b0713a); }
     `;
   }
 }
 
-customElements.define("motorcycle-racing-card", MotorcycleRacingCard);
+if (!customElements.get("motorcycle-racing-card")) {
+  customElements.define("motorcycle-racing-card", MotorcycleRacingCard);
+}
 
 window.customCards = window.customCards || [];
+if (!window.customCards.some((c) => c.type === "motorcycle-racing-card"))
 window.customCards.push({
   type: "motorcycle-racing-card",
   name: "Motorcycle Racing Card",
@@ -523,7 +762,7 @@ window.customCards.push({
  *
  * Aggregates "next session" across every configured series' device and
  * shows whichever is happening soonest, with the UK TV channel and the
- * time shown in GMT, regardless of the viewer's own browser timezone.
+ * time shown in the viewer's own time zone (override with `time_zone`).
  *
  * Minimal config:
  *   type: custom:motorcycle-racing-tv-card
@@ -650,12 +889,11 @@ class MotorcycleTVCard extends HTMLElement {
     }
 
     const [next, ...rest] = upcoming;
-    const dateLocale = this._config.date_locale;
-    const nextTimeStr = next.start.toLocaleString(dateLocale || undefined, {
+    const ctx = timeCtx(this._hass, this._config);
+    const nextTimeStr = safeFormat(next.start, ctx, {
       weekday: "long",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "GMT",
       timeZoneName: "short",
     });
 
@@ -685,7 +923,7 @@ class MotorcycleTVCard extends HTMLElement {
         <div class="upcoming-row">
           <span class="upcoming-series">${esc(s.series)}</span>
           <span class="upcoming-session">${esc(s.session)}</span>
-          <span class="upcoming-time">${esc(fmtTime(s.start.toISOString(), dateLocale))}</span>
+          <span class="upcoming-time">${esc(fmtTime(s.start.toISOString(), ctx))}</span>
           <span class="upcoming-channel">${esc(s.channel)}</span>
         </div>`
         )
@@ -750,7 +988,10 @@ class MotorcycleTVCard extends HTMLElement {
   }
 }
 
-customElements.define("motorcycle-racing-tv-card", MotorcycleTVCard);
+if (!customElements.get("motorcycle-racing-tv-card")) {
+  customElements.define("motorcycle-racing-tv-card", MotorcycleTVCard);
+}
+if (!window.customCards.some((c) => c.type === "motorcycle-racing-tv-card"))
 window.customCards.push({
   type: "motorcycle-racing-tv-card",
   name: "Motorcycle Racing – On TV",
@@ -763,8 +1004,8 @@ window.customCards.push({
  *
  * Season calendar for one series, sourced straight from its calendar
  * entity (calendar.<series>). Only ever asks for events from "now" onward
- * so finished rounds never appear, and every time is rendered in fixed
- * GMT (no DST drift), matching motorcycle-racing-card and
+ * so finished rounds never appear, and every time is rendered in
+ * the viewer's own time zone, matching motorcycle-racing-card and
  * motorcycle-racing-tv-card.
  *
  * Minimal config:
@@ -900,14 +1141,16 @@ class MotorcycleScheduleCard extends HTMLElement {
     }
 
     const limit = this._config.limit || 12;
-    const dateLocale = this._config.date_locale;
+    const ctx = timeCtx(this._hass, this._config);
     const rows = this._events
       .slice(0, limit)
       .map((e) => {
         const iso = e.start.dateTime || e.start.date;
+        // All-day events have no time of day, so show just the date.
+        const when = e.start.dateTime ? fmtDateTime(iso, ctx) : fmtDate(iso, { ...ctx, tz: "GMT" });
         return `
           <div class="sched-row">
-            <div class="sched-time">${esc(fmtDateTime(iso, dateLocale))}</div>
+            <div class="sched-time">${esc(when)}</div>
             <div class="sched-body">
               <div class="sched-summary">${esc(e.summary || "")}</div>
               ${e.location ? `<div class="sched-location">${esc(e.location)}</div>` : ""}
@@ -948,10 +1191,13 @@ class MotorcycleScheduleCard extends HTMLElement {
   }
 }
 
-customElements.define("motorcycle-racing-schedule-card", MotorcycleScheduleCard);
+if (!customElements.get("motorcycle-racing-schedule-card")) {
+  customElements.define("motorcycle-racing-schedule-card", MotorcycleScheduleCard);
+}
+if (!window.customCards.some((c) => c.type === "motorcycle-racing-schedule-card"))
 window.customCards.push({
   type: "motorcycle-racing-schedule-card",
   name: "Motorcycle Racing – Season calendar",
   description:
-    "Remaining sessions of the season for one series, sourced from its calendar entity. GMT times only, future rounds only.",
+    "Remaining sessions of the season for one series, sourced from its calendar entity. Shown in your local time, future rounds only.",
 });

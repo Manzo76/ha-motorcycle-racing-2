@@ -59,14 +59,35 @@ class NextRaceSensor(RacingEntity, SensorEntity):
 
     @property
     def native_value(self) -> str | None:
+        if self.series.season_over:
+            return "Season complete"
         event = self.series.next_event
         return event.name if event else "No race scheduled"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         event = self.series.next_event
+        if self.series.season_over:
+            upcoming = self.series.next_season_event
+            attrs: dict[str, Any] = {
+                "season": self.series.season,
+                "series": self.series.series_name,
+                "accent_colour": self.coordinator.accent,
+                "season_over": True,
+                "next_season_event": upcoming.name if upcoming else None,
+                "next_season_start": upcoming.start.isoformat()
+                if upcoming and upcoming.start
+                else None,
+                "next_season_circuit": upcoming.circuit if upcoming else None,
+                "next_season_country": upcoming.country if upcoming else None,
+                "next_season_poster": (upcoming.poster or upcoming.circuit_map)
+                if upcoming
+                else None,
+            }
+            attrs.update(_countdown(upcoming.start if upcoming else None))
+            return attrs
         if not event:
-            return {"season": self.series.season}
+            return {"season": self.series.season, "season_over": False}
         race = event.race_session
         attrs = event.as_dict()
         attrs.update(_countdown(race.start if race else event.start))
@@ -74,6 +95,7 @@ class NextRaceSensor(RacingEntity, SensorEntity):
         attrs["season"] = self.series.season
         attrs["series"] = self.series.series_name
         attrs["accent_colour"] = self.coordinator.accent
+        attrs["season_over"] = False
         return attrs
 
 
@@ -89,7 +111,9 @@ class NextSessionSensor(RacingEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         session = self.series.next_session
-        return session.name if session else "No session scheduled"
+        if session:
+            return session.name
+        return "Season complete" if self.series.season_over else "No session scheduled"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -179,8 +203,16 @@ class RiderStandingsSensor(RacingEntity, SensorEntity):
         rows = self.series.rider_standings
         attrs: dict[str, Any] = {
             "season": self.series.season,
+            "season_over": self.series.season_over,
             "standings": [row.as_dict() for row in rows],
         }
+        champion = self.series.champion_rider
+        if self.series.season_over and champion:
+            attrs["champion"] = champion.name
+            attrs["champion_team"] = champion.team
+            attrs["champion_points"] = champion.points
+            attrs["champion_number"] = champion.number
+            attrs["champion_wins"] = champion.wins
         if rows:
             attrs["leader"] = rows[0].name
             attrs["leader_points"] = rows[0].points
@@ -212,11 +244,17 @@ class TeamStandingsSensor(RacingEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         rows = self.series.team_standings
-        return {
+        attrs: dict[str, Any] = {
             "season": self.series.season,
+            "season_over": self.series.season_over,
             "standings": [row.as_dict() for row in rows],
             "leader_points": rows[0].points if rows else None,
         }
+        champion = self.series.champion_team
+        if self.series.season_over and champion:
+            attrs["champion_team"] = champion.name
+            attrs["champion_points"] = champion.points
+        return attrs
 
 
 class SeasonRoundSensor(RacingEntity, SensorEntity):
@@ -228,18 +266,27 @@ class SeasonRoundSensor(RacingEntity, SensorEntity):
     def __init__(self, coordinator: RacingCoordinator) -> None:
         super().__init__(coordinator, "season_round")
 
+    def _season_events(self):
+        """This season's rounds only - never next season's opening fixtures."""
+        events = self.series.events
+        upcoming = self.series.next_season_event
+        if self.series.season_over and upcoming and upcoming.start:
+            return [e for e in events if e.start and e.start < upcoming.start]
+        return events
+
     @property
     def native_value(self) -> int | None:
-        completed = [e for e in self.series.events if e.finished]
+        completed = [e for e in self._season_events() if e.finished]
         return len(completed)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        events = self.series.events
+        events = self._season_events()
         total = len(events)
         completed = len([e for e in events if e.finished])
         return {
             "season": self.series.season,
+            "season_over": self.series.season_over,
             "total_rounds": total,
             "rounds_completed": completed,
             "rounds_remaining": max(total - completed, 0),

@@ -12,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import AuthError, ProviderError, SeriesData, build_provider
+from .api.models import apply_season_state
 from .const import (
     CONF_LIVE_SCAN_INTERVAL,
     CONF_SCAN_INTERVAL,
@@ -73,6 +74,7 @@ class RacingCoordinator(DataUpdateCoordinator[SeriesData]):
         except ProviderError as err:
             raise UpdateFailed(str(err)) from err
 
+        apply_season_state(data, datetime.now(timezone.utc))
         self._retune_interval(data)
         return data
 

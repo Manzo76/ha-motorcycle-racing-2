@@ -115,6 +115,67 @@ check("sdb finished", sdb_event.finished, True)
 check("sdb session kind", sdb_event.sessions[0].kind, "race")
 check("sdb start hour", sdb_event.sessions[0].start.hour, 13)
 
+# --- season-over detection --------------------------------------------------
+from datetime import datetime, timedelta, timezone
+
+NOW = datetime(2026, 10, 24, 14, 0, tzinfo=timezone.utc)
+
+
+def _event(eid, start):
+    return models.RaceEvent(
+        event_id=eid, name=f"Round {eid}", start=start, end=start + timedelta(hours=3)
+    )
+
+
+def _series(season, last, nxt):
+    data = models.SeriesData(series_key="bsb", series_name="BSB", season=season)
+    data.last_event, data.next_event = last, nxt
+    data.next_session = object() if nxt else None
+    data.rider_standings = [
+        models.StandingRow(position=1, name="Champ", points=500, team="Team A"),
+        models.StandingRow(position=2, name="Runner", points=450),
+    ]
+    data.team_standings = [models.StandingRow(position=1, name="Team A", points=800)]
+    return data
+
+
+# BSB case: season finished in October, next event is May next year (189 days).
+last = _event("12", NOW - timedelta(days=7))
+nxt = _event("13", NOW + timedelta(days=189))
+done = models.apply_season_state(_series("2026", last, nxt), NOW)
+check("bsb season_over", done.season_over, True)
+check("bsb next_event cleared", done.next_event, None)
+check("bsb next_session cleared", done.next_session, None)
+check("bsb next season kept", done.next_season_event.event_id, "13")
+check("bsb champion rider", done.champion_rider.name, "Champ")
+check("bsb champion team", done.champion_team.name, "Team A")
+
+# Mid-season break (~5 weeks) is NOT the end of the season.
+mid = models.apply_season_state(
+    _series("2026", _event("5", NOW - timedelta(days=10)), _event("6", NOW + timedelta(days=25))),
+    NOW,
+)
+check("mid-season not over", mid.season_over, False)
+check("mid-season next kept", mid.next_event.event_id, "6")
+check("mid-season no champion", mid.champion_rider, None)
+
+# No upcoming events at all after racing happened -> over.
+none_left = models.apply_season_state(_series("2026", _event("9", NOW - timedelta(days=3)), None), NOW)
+check("no upcoming -> over", none_left.season_over, True)
+check("no upcoming -> no next season", none_left.next_season_event, None)
+
+# Brand-new data with nothing raced is not "over".
+fresh = models.apply_season_state(_series("2026", None, _event("1", NOW + timedelta(days=60))), NOW)
+check("fresh season not over", fresh.season_over, False)
+
+# Year-rollover guard: 2026 season, next event in 2027 within 100 days.
+roll = models.apply_season_state(
+    _series("2026", _event("20", datetime(2026, 11, 20, tzinfo=timezone.utc)), _event("21", datetime(2027, 1, 20, tzinfo=timezone.utc))),
+    datetime(2026, 11, 25, tzinfo=timezone.utc),
+)
+check("year rollover over", roll.season_over, True)
+
+
 if failures:
     print("FAILURES:")
     for line in failures:
