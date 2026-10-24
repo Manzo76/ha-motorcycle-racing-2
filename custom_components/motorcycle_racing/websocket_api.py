@@ -87,6 +87,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_overview)
     websocket_api.async_register_command(hass, ws_event_results)
     websocket_api.async_register_command(hass, ws_live)
+    websocket_api.async_register_command(hass, ws_latest_sprint)
     websocket_api.async_register_command(hass, ws_news)
     websocket_api.async_register_command(hass, ws_transfers)
     websocket_api.async_register_command(hass, ws_teams)
@@ -117,11 +118,12 @@ async def ws_event_results(hass: HomeAssistant, connection, msg: dict[str, Any])
         connection.send_error(msg["id"], "not_found", "Unknown series")
         return
     finished = False
+    iso = None
     if coordinator.data:
-        finished = any(
-            e.event_id == msg["event_id"] and e.finished for e in coordinator.data.events
-        )
-    result = await coordinator.async_event_results(msg["event_id"], finished)
+        for e in coordinator.data.events:
+            if e.event_id == msg["event_id"]:
+                finished, iso = e.finished, e.country_iso
+    result = await coordinator.async_event_results(msg["event_id"], finished, iso)
     connection.send_result(msg["id"], result)
 
 
@@ -144,7 +146,7 @@ async def ws_live(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
     if event is None:
         connection.send_result(msg["id"], {"live": None, "event": None, "sessions": []})
         return
-    result = await coordinator.async_event_results(event.event_id, False)
+    result = await coordinator.async_event_results(event.event_id, False, event.country_iso)
     connection.send_result(
         msg["id"],
         {
@@ -152,6 +154,33 @@ async def ws_live(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
             "event": _event(event),
             "sessions": result.get("sessions", []),
         },
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/latest_sprint", vol.Required("series"): str}
+)
+@websocket_api.async_response
+async def ws_latest_sprint(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
+    """Result of the sprint from the weekend in progress (or the latest one), if any."""
+    coordinator = _coordinators(hass).get(msg["series"])
+    if coordinator is None or coordinator.data is None:
+        connection.send_error(msg["id"], "not_found", "Unknown series")
+        return
+    data = coordinator.data
+    event = data.next_event if data.next_event and coordinator.is_race_weekend(data) else None
+    event = event or data.last_event
+    if event is None:
+        connection.send_result(msg["id"], {"sprint": None})
+        return
+    result = await coordinator.async_event_results(event.event_id, False, event.country_iso)
+    sprints = [
+        s for s in result.get("sessions", [])
+        if s.get("kind") == "sprint" and s.get("results")
+    ]
+    connection.send_result(
+        msg["id"],
+        {"event": _event(event), "sprint": sprints[-1] if sprints else None},
     )
 
 

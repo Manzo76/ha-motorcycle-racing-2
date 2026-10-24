@@ -291,7 +291,9 @@ class MotoGPProvider(RacingProvider):
 
     # -- per-event results (dashboard panel) --------------------------------
 
-    async def async_get_event_results(self, event_id: str, only_started: bool = True) -> dict[str, Any]:
+    async def async_get_event_results(
+        self, event_id: str, only_started: bool = True, country_iso: str | None = None
+    ) -> dict[str, Any]:
         """Every session of one weekend with its classification.
 
         Returns ``{"event": {...}, "sessions": [{...session, "results": [...]}]}``.
@@ -301,7 +303,7 @@ class MotoGPProvider(RacingProvider):
             await self._async_resolve_season()
         if not self._category_uuid:
             await self._async_resolve_category()
-        event = RaceEvent(event_id=event_id, name="")
+        event = RaceEvent(event_id=event_id, name="", country_iso=country_iso)
         sessions = await self._async_sessions(event)
         now = datetime.now(timezone.utc)
         out: list[dict[str, Any]] = []

@@ -293,9 +293,20 @@ class MotorcycleRacingPanel extends HTMLElement {
     }
     const last = s.last_event;
     const nextSeason = s.next_season_event;
+    const sp = this._fetch(`sprint:${s.key}`, { type: "motorcycle_racing/latest_sprint", series: s.key }, 120000);
+    const sprint = sp.data && sp.data.sprint;
+    const sprintCard = sprint
+      ? `<section class="card">
+          <h3>Latest sprint: ${esc(sp.data.event.name)}</h3>
+          <p class="muted">${esc(sprint.circuit || "")} &middot; ${esc(this._day(sprint.start))} ${esc(this._time(sprint.start))}</p>
+          ${this._podium(sprint.results)}
+          ${this._table((sprint.results || []).slice(0, 10), this._resultCols())}
+        </section>`
+      : "";
     return `
       ${hero}
       <div class="grid">
+        ${sprintCard}
         <section class="card">
           <h3>${last ? `Last race: ${esc(last.name)}` : "Last race"}</h3>
           ${last ? `<p class="muted">${esc(last.circuit || "")} &middot; ${esc(this._date(last.end || last.start))}</p>` : ""}

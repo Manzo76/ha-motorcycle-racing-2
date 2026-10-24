@@ -50,6 +50,7 @@ const hass = {
     calls.push(msg.type);
     if (msg.type.endsWith("overview")) return { series };
     if (msg.type.endsWith("event_results")) return { sessions: [{ name: "Race", kind: "race", results: rows }, { name: "Qualifying", kind: "qualifying", results: rows }] };
+    if (msg.type.endsWith("latest_sprint")) return { event: { name: "Australian GP" }, sprint: { name: "Sprint", kind: "sprint", start: "2026-10-24T04:00:00+00:00", circuit: "Phillip Island", results: rows } };
     if (msg.type.endsWith("/news")) return { source: "Crash.net", items: [{ title: "Marc <b>wins</b>", link: "https://www.crash.net/a", summary: "Great sprint", source: "Crash.net", published: new Date().toISOString() }] };
     if (msg.type.endsWith("/transfers")) return { year: 2027, moves: [{ kind: "move", rider: "Francesco Bagnaia", number: "63", from: "Ducati Lenovo Team", to: "Aprilia Racing" }, { kind: "new", rider: "Pedro Acosta", to: "Ducati Lenovo Team" }, { kind: "out", rider: "Jorge Martin", from: "Aprilia Racing" }], headlines: [{ title: "Rookie signs for 2027", link: "https://www.crash.net/b", source: "Crash.net", published: new Date().toISOString() }] };
     if (msg.type.endsWith("/teams")) return { teams: [{ name: "Ducati Lenovo Team", title: "Ducati Lenovo Team", constructor: "Ducati", bike: "GP27", position: 1, points: 500, riders: [{ name: "Marc Marquez", number: "93", position: 1, points: 300 }] }, { name: "Aprilia Racing", riders: [{ name: "Jorge Martin", number: "89" }] }] };
@@ -65,6 +66,7 @@ await wait();
 let html = p.shadowRoot.innerHTML;
 assert.match(html, /Next: <b>Japanese GP/, "overview next race");
 assert.match(html, /class="podium"/, "podium");
+assert.match(html, /Latest sprint: Australian GP/, "latest sprint card");
 assert.doesNotMatch(html, /<b>Four<\/b>/, "html escaped");
 assert.match(html, /Star us on GitHub/, "github link");
 assert.match(html, /Wikimedia Commons/, "image credit");

@@ -304,7 +304,7 @@ class SportsDBProvider(RacingProvider):
 
     # -- entry point -------------------------------------------------------
 
-    async def async_get_event_results(self, event_id: str, only_started: bool = True) -> dict[str, Any]:
+    async def async_get_event_results(self, event_id: str, only_started: bool = True, country_iso: str | None = None) -> dict[str, Any]:
         """The race result for one event (TheSportsDB has one session per event)."""
         detail = await self._get_json(f"{self._root}/lookupevent.php", {"id": event_id})
         found = (detail or {}).get("events") or []
