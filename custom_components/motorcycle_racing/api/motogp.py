@@ -18,6 +18,7 @@ from .base import (
     RacingProvider,
     classify_session,
     fetch_wikipedia_thumbnail,
+    circuit_local_to_utc,
     parse_dt,
     to_float,
     to_int,
@@ -137,6 +138,9 @@ class MotoGPProvider(RacingProvider):
                 poster = candidate
             if poster:
                 break
+        end_raw = parse_dt(item.get("date_end") or item.get("date_end_utc"))
+        if end_raw and end_raw.hour == end_raw.minute == 0:
+            end_raw += timedelta(days=1)  # a bare date means "through the end of that day"
         return RaceEvent(
             event_id=str(event_id),
             name=item.get("sponsored_name") or item.get("name") or "Grand Prix",
@@ -145,8 +149,8 @@ class MotoGPProvider(RacingProvider):
             circuit=circuit.get("name"),
             country=country.get("name"),
             country_iso=country.get("iso"),
-            start=parse_dt(item.get("date_start") or item.get("date_start_utc")),
-            end=parse_dt(item.get("date_end") or item.get("date_end_utc")),
+            start=circuit_local_to_utc(parse_dt(item.get("date_start") or item.get("date_start_utc")), country.get("iso")),
+            end=circuit_local_to_utc(end_raw, country.get("iso")),
             finished=finished,
             poster=poster,
         )
@@ -173,7 +177,7 @@ class MotoGPProvider(RacingProvider):
         sessions: list[Session] = []
         for item in raw:
             name = _session_name(item)
-            start = parse_dt(item.get("date"))
+            start = circuit_local_to_utc(parse_dt(item.get("date")), event.country_iso)
             condition = item.get("condition") or {}
             sessions.append(
                 Session(

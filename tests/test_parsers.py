@@ -31,6 +31,12 @@ def check(label, got, want):
 
 
 # --- session classification -------------------------------------------------
+# MotoGP API labels circuit wall-clock times as UTC: Phillip Island sprint 15:00 local = 04:00 UTC
+_sp = base.circuit_local_to_utc(base.parse_dt("2026-10-24T15:00:00+00:00"), "AU")
+check("circuit tz AU sprint", _sp.isoformat(), "2026-10-24T04:00:00+00:00")
+_rc = base.circuit_local_to_utc(base.parse_dt("2026-10-25T14:00:00+00:00"), "AU")
+check("circuit tz AU race", _rc.isoformat(), "2026-10-25T03:00:00+00:00")
+check("circuit tz unknown country untouched", base.circuit_local_to_utc(base.parse_dt("2026-10-25T14:00:00+00:00"), "ZZ").hour, 14)
 check("FP1", classify_session("FP1"), "practice")
 check("Q2", classify_session("Q2"), "qualifying")
 check("Superpole", classify_session("Superpole"), "qualifying")

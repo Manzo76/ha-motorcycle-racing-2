@@ -7,8 +7,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import aiohttp
 
@@ -159,3 +160,32 @@ def to_float(value: Any) -> float | None:
         return float(str(value).strip())
     except (TypeError, ValueError):
         return None
+
+
+# The MotoGP results API labels circuit-local wall-clock times as UTC
+# ("15:00:00+00:00" is really 15:00 at the track). These are the circuits'
+# real time zones, keyed by the country code the API sends.
+CIRCUIT_TZ: dict[str, str] = {
+    "AU": "Australia/Melbourne", "AT": "Europe/Vienna", "AR": "America/Argentina/Buenos_Aires",
+    "BR": "America/Sao_Paulo", "CZ": "Europe/Prague", "FR": "Europe/Paris", "DE": "Europe/Berlin",
+    "GB": "Europe/London", "UK": "Europe/London", "HU": "Europe/Budapest", "ID": "Asia/Makassar",
+    "IN": "Asia/Kolkata", "IT": "Europe/Rome", "JP": "Asia/Tokyo", "KZ": "Asia/Almaty",
+    "MY": "Asia/Kuala_Lumpur", "NL": "Europe/Amsterdam", "PT": "Europe/Lisbon", "QA": "Asia/Qatar",
+    "SM": "Europe/San_Marino", "ES": "Europe/Madrid", "TH": "Asia/Bangkok", "TR": "Europe/Istanbul",
+    "US": "America/Chicago", "MX": "America/Mexico_City", "CA": "America/Toronto",
+    "FI": "Europe/Helsinki", "GR": "Europe/Athens", "SK": "Europe/Bratislava", "RO": "Europe/Bucharest",
+}
+
+
+def circuit_local_to_utc(value: datetime | None, country_iso: str | None) -> datetime | None:
+    """Re-read a UTC-labelled circuit wall-clock time in the circuit's own zone."""
+    if value is None or not country_iso:
+        return value
+    name = CIRCUIT_TZ.get(country_iso.upper())
+    if not name or value.utcoffset() not in (None, timedelta(0)):
+        return value
+    try:
+        zone = ZoneInfo(name)
+    except (ZoneInfoNotFoundError, KeyError):
+        return value
+    return value.replace(tzinfo=zone).astimezone(timezone.utc)
