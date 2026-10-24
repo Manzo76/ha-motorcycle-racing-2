@@ -276,6 +276,16 @@ out = asyncio.run(sd.async_get_event_results("123"))
 check("sdb event result", out["sessions"][0]["results"][0]["rider"], "Nicolo Bulega")
 check("sdb event kind", out["sessions"][0]["kind"], "race")
 
+
+# --- standings text variants -------------------------------------------------
+st = sportsdb._split_standings_from_text(
+    "1. Race\n---\nDriver Standings\n1. Kyle Ryde 593 (Champion)\n2. Scott Redding / 561\n3. Rory Skinner 285\n"
+)
+check("standings name cleaned", st[0].name, "Kyle Ryde")
+check("standings glued points", st[0].points, 593.0)
+check("standings points from team col", (st[1].name, st[1].points, st[1].team), ("Scott Redding", 561.0, None))
+check("standings glued no tag", (st[2].name, st[2].points), ("Rory Skinner", 285.0))
+
 if failures:
     print("FAILURES:")
     for line in failures:

@@ -134,16 +134,22 @@ def _split_standings_from_text(blob: str | None) -> list[StandingRow]:
         fields = [_clean_field(p) for p in _SLASH_FIELD_SPLIT.split(remainder) if p.strip(" \t\x2d–/")]
         if not fields:
             continue
-        name = fields[0]
+        name = re.sub(r"\(\s*champion\s*\)", "", fields[0], flags=re.I).strip()
+        team = fields[1] if len(fields) > 1 else None
+        points = to_float(fields[2]) if len(fields) > 2 else None
+        # "Kyle Ryde 593" - points glued to the name.
+        glued = re.match(r"^(.*?[A-Za-z.\x27])\s+(\d{1,4})$", name)
+        if glued:
+            name, points = glued.group(1).strip(), to_float(glued.group(2))
+        # "Scott Redding / 561" - points landed in the team column.
+        if team and re.fullmatch(r"\d{1,4}(\.\d+)?", team):
+            if points is None:
+                points = to_float(team)
+            team = None
         if len(name) < 3 or not _HAS_LETTERS.search(name):
             continue
         rows.append(
-            StandingRow(
-                position=to_int(position),
-                name=name,
-                team=fields[1] if len(fields) > 1 else None,
-                points=to_float(fields[2]) if len(fields) > 2 else None,
-            )
+            StandingRow(position=to_int(position), name=name, team=team, points=points)
         )
     rows.sort(key=lambda r: r.position if r.position is not None else 999)
     return rows

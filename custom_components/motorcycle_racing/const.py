@@ -52,10 +52,10 @@ CARD_FILENAME: Final = "motorcycle-racing-card.js"
 # before the file existed) will keep serving that cached copy forever.
 CARD_VERSION: Final = "7"
 
-PANEL_URL_PATH: Final = "motorcycle-racing"
+PANEL_URL_PATH: Final = "racing-hub"
 PANEL_MODULE_URL: Final = f"/{DOMAIN}/motorcycle-racing-panel.js"
 PANEL_FILENAME: Final = "motorcycle-racing-panel.js"
-PANEL_VERSION: Final = "1"
+PANEL_VERSION: Final = "2"
 
 # ---------------------------------------------------------------------------
 # Series catalogue
