@@ -40,3 +40,23 @@ jobs:
         with:
           python-version: "3.13"
       - run: python -m compileall -q custom_components
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python tests/test_parsers.py
+      - run: python tests/test_extras.py
+      - run: node tests/card_render.test.mjs
+        env:
+          TZ: Europe/London
+      - run: node tests/panel_render.test.mjs
+        env:
+          TZ: Europe/London
