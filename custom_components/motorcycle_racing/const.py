@@ -1,3 +1,5 @@
+# Motorcycle Racing for Home Assistant - Made by Manzo.
+# Copyright (c) 2026 Manzo76. All rights reserved. See LICENSE.
 """Constants for the Motorcycle Racing integration."""
 
 from __future__ import annotations
@@ -50,12 +52,12 @@ CARD_FILENAME: Final = "motorcycle-racing-card.js"
 # an ES module by its exact URL, so an unchanged "?v=" means a browser that
 # already loaded the card (even a broken/placeholder version, or a 404 from
 # before the file existed) will keep serving that cached copy forever.
-CARD_VERSION: Final = "7"
+CARD_VERSION: Final = "8"
 
 PANEL_URL_PATH: Final = "racing-hub"
 PANEL_MODULE_URL: Final = f"/{DOMAIN}/motorcycle-racing-panel.js"
 PANEL_FILENAME: Final = "motorcycle-racing-panel.js"
-PANEL_VERSION: Final = "7"
+PANEL_VERSION: Final = "8"
 
 # ---------------------------------------------------------------------------
 # Series catalogue

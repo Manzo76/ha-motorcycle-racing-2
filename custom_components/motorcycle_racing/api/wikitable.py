@@ -1,3 +1,5 @@
+# Motorcycle Racing for Home Assistant - Made by Manzo.
+# Copyright (c) 2026 Manzo76. All rights reserved. See LICENSE.
 """Tiny, dependency-free Wikipedia table reader.
 
 Home Assistant ships no HTML parser we can rely on, so this uses the standard

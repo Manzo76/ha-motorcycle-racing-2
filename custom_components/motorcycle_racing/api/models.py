@@ -1,3 +1,5 @@
+# Motorcycle Racing for Home Assistant - Made by Manzo.
+# Copyright (c) 2026 Manzo76. All rights reserved. See LICENSE.
 """Normalised data model shared by every Motorcycle Racing provider.
 
 Providers translate whatever their upstream API returns into these objects, so

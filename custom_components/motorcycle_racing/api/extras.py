@@ -1,3 +1,5 @@
+# Motorcycle Racing for Home Assistant - Made by Manzo.
+# Copyright (c) 2026 Manzo76. All rights reserved. See LICENSE.
 """News, rider market, team profiles and TV listings for the dashboard panel.
 
 Everything here is fetched live and cached in memory. Every public method

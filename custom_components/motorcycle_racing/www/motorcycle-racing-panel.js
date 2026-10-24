@@ -633,7 +633,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         .lnk { color:#fff; text-decoration:underline; } .small { font-size:.78rem; }
         footer { margin-top:24px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:.8rem; opacity:.9; }
         footer a, footer button { color:inherit; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:6px 14px; text-decoration:none; cursor:pointer; font:inherit; }
-        footer .credit { flex-basis:100%; opacity:.85; font-size:.72rem; } footer .credit a { background:none; border:0; padding:0; text-decoration:underline; }
+        footer .credit { flex-basis:100%; opacity:.85; font-size:.72rem; } footer .made { font-weight:600; opacity:1; font-size:.8rem; } footer .credit a { background:none; border:0; padding:0; text-decoration:underline; }
         @media (max-width:640px) { .hide-narrow { display:none; } .fx .dt { display:none; } }
       </style>
       <div class="bg"></div>
@@ -651,6 +651,7 @@ class MotorcycleRacingPanel extends HTMLElement {
           <a href="${PANEL_REPO}" target="_blank" rel="noopener">&#9733; Star us on GitHub</a>
           <button data-act="share">Share with friends</button>
           <a href="${PANEL_REPO}/issues" target="_blank" rel="noopener">Report a problem</a>
+          <span class="credit made">Made by Manzo &middot; &copy; 2026 Manzo76. All rights reserved.</span>
           <span class="credit">Background photo: CC0 / public domain, <a href="${BG_PAGE}" target="_blank" rel="noopener">Wikimedia Commons</a>. ${esc((s && s.attribution) || "")}${s && /not affiliated/i.test(s.attribution || "") ? "" : " Not affiliated with any championship."}</span>
         </footer>
       </div>`;

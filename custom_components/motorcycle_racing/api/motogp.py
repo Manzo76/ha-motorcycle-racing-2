@@ -1,3 +1,5 @@
+# Motorcycle Racing for Home Assistant - Made by Manzo.
+# Copyright (c) 2026 Manzo76. All rights reserved. See LICENSE.
 """Provider for the Grand Prix classes: MotoGP, Moto2, Moto3 and MotoE.
 
 Reads the public JSON API that motogp.com itself uses. No key is needed, but it
