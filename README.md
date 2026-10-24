@@ -215,4 +215,8 @@ any code change.
 
 ## Licence
 
-MIT.
+Copyright (c) 2026 Manzo76. All rights reserved. Made by Manzo.
+
+You may install and use this integration, unmodified, for personal,
+non-commercial purposes. Copying, modifying or redistributing the code needs
+the author's written permission. See [LICENSE](LICENSE).
