@@ -192,10 +192,8 @@ class MotorcycleRacingPanel extends HTMLElement {
   // ---- time ---------------------------------------------------------------
 
   _zone() {
-    const h = this._hass || {};
-    const loc = h.locale || {};
-    if (loc.time_zone === "server") return h.config && h.config.time_zone;
-    return undefined; // browser local
+    // All times are shown in GMT, matching the dashboard cards.
+    return "GMT";
   }
   _lang() {
     return (this._hass && this._hass.locale && this._hass.locale.language) || undefined;
