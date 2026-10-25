@@ -53,7 +53,10 @@ class RacingCalendar(RacingEntity, CalendarEntity):
                     continue
                 events.append(
                     CalendarEvent(
-                        summary=f"{self.coordinator.series_name} {session.name} – {race.name}",
+                        summary=(
+                            f"{self.coordinator.series_name} {session.name} – {race.name}"
+                            + (" (CANCELLED)" if session.cancelled else "")
+                        ),
                         start=session.start,
                         end=session.end or session.start + timedelta(minutes=45),
                         location=session.circuit or race.circuit or "",
@@ -65,6 +68,7 @@ class RacingCalendar(RacingEntity, CalendarEntity):
                                     if race.round_number
                                     else None,
                                     race.country,
+                                    session.cancel_reason if session.cancelled else None,
                                     (session.weather or {}).get("weather"),
                                 ],
                             )

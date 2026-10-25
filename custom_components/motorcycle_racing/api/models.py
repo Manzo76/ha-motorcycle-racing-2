@@ -29,6 +29,8 @@ class Session:
     circuit: str | None = None
     weather: dict[str, Any] = field(default_factory=dict)
     session_id: str | None = None
+    cancelled: bool = False
+    cancel_reason: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -38,6 +40,8 @@ class Session:
             "end": _iso(self.end),
             "circuit": self.circuit,
             "weather": self.weather or None,
+            "cancelled": self.cancelled,
+            "cancel_reason": self.cancel_reason,
         }
 
 
@@ -62,12 +66,29 @@ class RaceEvent:
 
     @property
     def race_session(self) -> Session | None:
-        """The main race, falling back to the last session of the weekend."""
-        races = [s for s in self.sessions if s.kind == "race"]
+        """The main race that actually ran, falling back to the last session held.
+
+        Cancelled sessions are never returned: a washed-out Sunday race must not
+        be mistaken for a result to fetch.
+        """
+        live = [s for s in self.sessions if not s.cancelled]
+        races = [s for s in live if s.kind == "race"]
         if races:
             return sorted(races, key=lambda s: s.start or datetime.max)[-1]
-        dated = [s for s in self.sessions if s.start]
+        dated = [s for s in live if s.start]
         return sorted(dated, key=lambda s: s.start)[-1] if dated else None
+
+    @property
+    def race_cancelled(self) -> bool:
+        """True when the weekend's main race was called off."""
+        return any(s.cancelled and s.kind == "race" for s in self.sessions)
+
+    @property
+    def cancel_reason(self) -> str | None:
+        for s in self.sessions:
+            if s.cancelled and s.kind == "race" and s.cancel_reason:
+                return s.cancel_reason
+        return None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -80,6 +101,8 @@ class RaceEvent:
             "start": _iso(self.start),
             "end": _iso(self.end),
             "finished": self.finished,
+            "race_cancelled": self.race_cancelled,
+            "cancel_reason": self.cancel_reason,
             "sessions": [s.as_dict() for s in self.sessions],
             "poster": self.poster,
             "banner": self.banner,
@@ -195,6 +218,8 @@ class SeriesData:
     events: list[RaceEvent] = field(default_factory=list)
     next_event: RaceEvent | None = None
     last_event: RaceEvent | None = None
+    # Most recent round whose race was cancelled, if it is newer than last_event.
+    cancelled_event: RaceEvent | None = None
     next_session: Session | None = None
     next_session_event: RaceEvent | None = None
     live_session: Session | None = None

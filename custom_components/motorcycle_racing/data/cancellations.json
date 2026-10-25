@@ -1,0 +1,10 @@
+[
+  {
+    "season": "2026",
+    "series": ["motogp", "moto2", "moto3"],
+    "country_iso": "AU",
+    "country": "Australia",
+    "kinds": ["race"],
+    "reason": "Cancelled on race day: heavy rain and poor visibility grounded the medical helicopter. Phillip Island's final Grand Prix; the Australian GP moves to Adelaide in 2027."
+  }
+]

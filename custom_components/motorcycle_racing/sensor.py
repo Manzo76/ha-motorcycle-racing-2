@@ -179,6 +179,14 @@ class LastRaceSensor(RacingEntity, SensorEntity):
             "poster": event.poster if event else None,
             "circuit_map": event.circuit_map if event else None,
         }
+        cancelled = self.series.cancelled_event
+        if cancelled:
+            # A newer round whose race was called off - not a result, but worth knowing.
+            attrs["cancelled_event"] = cancelled.name
+            attrs["cancelled_event_date"] = (
+                cancelled.start.isoformat() if cancelled.start else None
+            )
+            attrs["cancelled_reason"] = cancelled.cancel_reason
         if results:
             attrs["winner"] = results[0].rider
             attrs["winner_team"] = results[0].team
@@ -293,6 +301,7 @@ class SeasonRoundSensor(RacingEntity, SensorEntity):
             "total_rounds": total,
             "rounds_completed": completed,
             "rounds_remaining": max(total - completed, 0),
+            "races_cancelled": len([e for e in events if e.race_cancelled]),
             "progress_percent": round(completed / total * 100) if total else 0,
             "calendar": [
                 {
@@ -302,6 +311,8 @@ class SeasonRoundSensor(RacingEntity, SensorEntity):
                     "country": event.country,
                     "date": event.start.isoformat() if event.start else None,
                     "finished": event.finished,
+                    "race_cancelled": event.race_cancelled,
+                    "cancel_reason": event.cancel_reason,
                 }
                 for event in events
             ],

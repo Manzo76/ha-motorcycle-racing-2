@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from functools import lru_cache
+from pathlib import Path
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -13,7 +16,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import aiohttp
 
-from .models import SeriesData
+from .models import SeriesData, Session
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -189,3 +192,71 @@ def circuit_local_to_utc(value: datetime | None, country_iso: str | None) -> dat
     except (ZoneInfoNotFoundError, KeyError):
         return value
     return value.replace(tzinfo=zone).astimezone(timezone.utc)
+
+
+# -- cancellations ---------------------------------------------------------
+
+_CANCEL_WORDS = ("cancel", "abandon", "called off", "washed out")
+
+
+def looks_cancelled(raw: dict[str, Any]) -> tuple[bool, str | None]:
+    """Spot a cancellation flag in an upstream session/event record.
+
+    The upstream feeds are undocumented, so look at every status-like field
+    rather than trusting one name.
+    """
+    for key in ("cancelled", "canceled", "is_cancelled", "is_canceled"):
+        if raw.get(key) in (True, 1, "1", "true", "True"):
+            return True, _reason(raw)
+    for key in ("status", "session_status", "state", "strStatus", "strResult"):
+        value = str(raw.get(key) or "").lower()
+        if any(word in value for word in _CANCEL_WORDS):
+            return True, _reason(raw)
+    return False, None
+
+
+def _reason(raw: dict[str, Any]) -> str | None:
+    for key in ("cancel_reason", "cancelled_reason", "reason", "status_reason"):
+        if raw.get(key):
+            return str(raw[key])
+    return None
+
+
+@lru_cache(maxsize=1)
+def _load_cancellations() -> tuple[dict[str, Any], ...]:
+    path = Path(__file__).resolve().parent.parent / "data" / "cancellations.json"
+    try:
+        return tuple(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return ()
+
+
+def apply_known_cancellations(
+    series_key: str,
+    season: str | None,
+    sessions: list[Session],
+    country: str | None,
+    country_iso: str | None,
+) -> None:
+    """Flag sessions listed in data/cancellations.json.
+
+    Upstream feeds can lag behind a race-day cancellation by hours or days, so
+    confirmed cancellations are also kept locally and matched by season, series,
+    country and session kind.
+    """
+    for rule in _load_cancellations():
+        if rule.get("season") and str(rule["season"]) != str(season or ""):
+            continue
+        if series_key not in (rule.get("series") or [series_key]):
+            continue
+        name = (country or "").strip().lower()
+        iso = (country_iso or "").strip().upper()
+        if iso != str(rule.get("country_iso", "")).upper() and name != str(
+            rule.get("country", "")
+        ).lower():
+            continue
+        kinds = rule.get("kinds") or ["race"]
+        for session in sessions:
+            if session.kind in kinds and not session.cancelled:
+                session.cancelled = True
+                session.cancel_reason = rule.get("reason")

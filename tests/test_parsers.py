@@ -292,6 +292,26 @@ check("standings glued points", st[0].points, 593.0)
 check("standings points from team col", (st[1].name, st[1].points, st[1].team), ("Scott Redding", 561.0, None))
 check("standings glued no tag", (st[2].name, st[2].points), ("Rory Skinner", 285.0))
 
+# --- cancellations ------------------------------------------------------------
+check("flag: status field", base.looks_cancelled({"status": "CANCELLED"})[0], True)
+check("flag: boolean", base.looks_cancelled({"cancelled": True})[0], True)
+check("flag: normal", base.looks_cancelled({"status": "FINISHED"})[0], False)
+_sess = [
+    models.Session(name="Sprint", kind="sprint", start=base.parse_dt("2026-10-24T04:00:00+00:00")),
+    models.Session(name="Race", kind="race"),
+]
+base.apply_known_cancellations("motogp", "2026", _sess, "Australia", "AU")
+check("AU race cancelled", [s.cancelled for s in _sess], [False, True])
+_other = [models.Session(name="Race", kind="race")]
+base.apply_known_cancellations("motogp", "2026", _other, "Malaysia", "MY")
+check("other country untouched", _other[0].cancelled, False)
+_wsbk = [models.Session(name="Race", kind="race")]
+base.apply_known_cancellations("worldsbk", "2026", _wsbk, "Australia", "AU")
+check("other series untouched", _wsbk[0].cancelled, False)
+_ev = models.RaceEvent(event_id="x", name="AU", sessions=_sess)
+check("race_cancelled", _ev.race_cancelled, True)
+check("race_session skips cancelled", _ev.race_session.name, "Sprint")
+
 if failures:
     print("FAILURES:")
     for line in failures:

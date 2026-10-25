@@ -16,7 +16,9 @@ from typing import Any
 from .base import (
     ProviderError,
     RacingProvider,
+    apply_known_cancellations,
     classify_session,
+    looks_cancelled,
     fetch_wikipedia_thumbnail,
     circuit_local_to_utc,
     parse_dt,
@@ -179,6 +181,7 @@ class MotoGPProvider(RacingProvider):
             name = _session_name(item)
             start = circuit_local_to_utc(parse_dt(item.get("date")), event.country_iso)
             condition = item.get("condition") or {}
+            cancelled, reason = looks_cancelled(item)
             sessions.append(
                 Session(
                     name=name,
@@ -198,8 +201,13 @@ class MotoGPProvider(RacingProvider):
                         if v
                     },
                     session_id=str(item.get("id")) if item.get("id") else None,
+                    cancelled=cancelled,
+                    cancel_reason=reason,
                 )
             )
+        apply_known_cancellations(
+            self._series_key, self._season_year, sessions, event.country, event.country_iso
+        )
         sessions.sort(key=lambda s: s.start or datetime.max.replace(tzinfo=timezone.utc))
         return sessions
 
@@ -395,30 +403,69 @@ class MotoGPProvider(RacingProvider):
         upcoming = [e for e in events if (e.end or e.start or now) >= now]
         past = [e for e in events if (e.end or e.start or now) < now]
         data.next_event = upcoming[0] if upcoming else None
-        data.last_event = past[-1] if past else None
 
         if data.next_event:
             data.next_event.circuit_map = await self._async_circuit_image(
                 data.next_event.circuit
             )
             data.next_event.sessions = await self._async_sessions(data.next_event)
+            remaining = False
             for session in data.next_event.sessions:
+                if session.cancelled:
+                    continue
                 if session.start and session.start >= now:
-                    data.next_session = session
-                    data.next_session_event = data.next_event
-                    break
-                if (
+                    remaining = True
+                    if data.next_session is None:
+                        data.next_session = session
+                        data.next_session_event = data.next_event
+                elif (
                     session.start
                     and session.end
                     and session.start <= now <= session.end
                 ):
                     data.live_session = session
+            # A weekend whose race was cancelled and has nothing left to run is
+            # over, even though its calendar window has not closed yet.
+            if (
+                data.next_event.race_cancelled
+                and not remaining
+                and data.live_session is None
+            ):
+                past.append(data.next_event)
+                data.next_event = upcoming[1] if len(upcoming) > 1 else None
+                data.next_session = None
+                data.next_session_event = None
+                if data.next_event:
+                    data.next_event.circuit_map = await self._async_circuit_image(
+                        data.next_event.circuit
+                    )
+                    data.next_event.sessions = await self._async_sessions(
+                        data.next_event
+                    )
+                    for session in data.next_event.sessions:
+                        if not session.cancelled and session.start and session.start >= now:
+                            data.next_session = session
+                            data.next_session_event = data.next_event
+                            break
+
+        # "Last race" is the most recent round that actually produced a race
+        # result; a cancelled round is surfaced separately.
+        for event in reversed(past):
+            if not event.sessions:
+                event.sessions = await self._async_sessions(event)
+            ran = any(x.kind == "race" and not x.cancelled for x in event.sessions)
+            if event.race_cancelled and not ran:
+                if data.cancelled_event is None:
+                    data.cancelled_event = event
+                continue
+            data.last_event = event
+            break
 
         if data.last_event:
-            data.last_event.circuit_map = await self._async_circuit_image(
-                data.last_event.circuit
-            )
-            data.last_event.sessions = await self._async_sessions(data.last_event)
+            if not data.last_event.circuit_map:
+                data.last_event.circuit_map = await self._async_circuit_image(
+                    data.last_event.circuit
+                )
             race = data.last_event.race_session
             if race:
                 try:

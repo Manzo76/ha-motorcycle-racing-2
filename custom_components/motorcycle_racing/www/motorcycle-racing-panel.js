@@ -363,7 +363,7 @@ class MotorcycleRacingPanel extends HTMLElement {
     return `<section class="card"><div class="fixtures">${cal
       .map((e) => {
         const tag =
-          e.id === nextId ? `<em class="tag next">Next</em>` : e.id === lastId ? `<em class="tag last">Last</em>` : e.finished ? `<em class="tag">Done</em>` : "";
+          e.race_cancelled ? `<em class="tag cancelled" title="${esc(e.cancel_reason || "Race cancelled")}">Race cancelled</em>` : e.id === nextId ? `<em class="tag next">Next</em>` : e.id === lastId ? `<em class="tag last">Last</em>` : e.finished ? `<em class="tag">Done</em>` : "";
         return `<button class="fx ${e.finished ? "done" : ""} ${e.id === nextId ? "next" : ""}" data-act="event" data-id="${esc(e.id)}">
           <span class="rd">${esc(e.round ?? "")}</span>
           <span class="nm"><b>${esc(e.name)}</b><small>${esc(e.circuit || "")}${e.country ? ` &middot; ${esc(e.country)}` : ""}</small></span>
@@ -382,6 +382,11 @@ class MotorcycleRacingPanel extends HTMLElement {
       .map((e) => `<option value="${esc(e.id)}" ${e.id === id ? "selected" : ""}>${esc(e.round ? `R${e.round} ` : "")}${esc(e.name)}</option>`)
       .join("");
     const res = this._results[`${s.key}:${id}`];
+    const picked = (s.calendar || []).find((e) => e.id === id);
+    const notice =
+      picked && picked.race_cancelled
+        ? `<p class="muted"><b>Race cancelled.</b> ${esc(picked.cancel_reason || "The main race did not take place.")}</p>`
+        : "";
     let body = `<p class="muted">Loading...</p>`;
     if (res && res.done) {
       const sessions = (res.sessions || []).filter((x) => (x.results || []).length);
@@ -396,7 +401,7 @@ class MotorcycleRacingPanel extends HTMLElement {
       }
     }
     return `<label class="sel">Race weekend <select data-act="pick-event">${opts}</select></label>
-      <section class="card">${body}</section>`;
+      ${notice}<section class="card">${body}</section>`;
   }
 
   _viewTables(s) {
@@ -681,7 +686,7 @@ class MotorcycleRacingPanel extends HTMLElement {
         .fx { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid transparent; color:inherit; border-radius:10px; padding:10px 12px; font:inherit; text-align:left; cursor:pointer; }
         .fx:hover { border-color:var(--accent); } .fx.next { border-color:var(--accent); background:rgba(255,255,255,.1); } .fx.done { opacity:.8; }
         .fx .rd { width:28px; font-weight:800; opacity:.6; } .fx .nm { flex:1; } .fx small { display:block; opacity:.85; } .fx .dt { opacity:.8; white-space:nowrap; }
-        .tag { font-style:normal; font-size:.7rem; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.14); } .tag.next { background:var(--accent); }
+        .tag { font-style:normal; font-size:.7rem; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.14); } .tag.next { background:var(--accent); } .tag.cancelled { background:#8a1c1c; color:#fff; }
         label.sel { display:block; margin-bottom:10px; } select { margin-left:8px; background:rgba(18,18,26,.85); color:inherit; border:1px solid rgba(255,255,255,.2); border-radius:8px; padding:7px 10px; font:inherit; max-width:100%; }
         .news { display:flex; flex-direction:column; gap:8px; }
         .item { display:flex; flex-direction:column; gap:4px; background:rgba(10,10,16,.82); border:1px solid rgba(255,255,255,.16); border-radius:12px; padding:12px 14px; color:inherit; text-decoration:none; }

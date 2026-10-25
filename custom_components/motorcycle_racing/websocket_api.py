@@ -58,6 +58,7 @@ def _series_payload(coordinator: RacingCoordinator) -> dict[str, Any]:
         "next_session": data.next_session.as_dict() if data.next_session else None,
         "next_season_event": _event(data.next_season_event),
         "last_event": _event(data.last_event),
+        "cancelled_event": _event(data.cancelled_event),
         "last_results": [r.as_dict() for r in data.last_results],
         "calendar": [_event(e) for e in data.events],
         "riders": [r.as_dict() for r in data.rider_standings],
