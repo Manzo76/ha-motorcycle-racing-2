@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -171,20 +172,34 @@ async def ws_latest_sprint(hass: HomeAssistant, connection, msg: dict[str, Any])
         connection.send_error(msg["id"], "not_found", "Unknown series")
         return
     data = coordinator.data
-    event = data.next_event if data.next_event and coordinator.is_race_weekend(data) else None
-    event = event or data.last_event
-    if event is None:
+    # Candidate weekends, newest first. A weekend whose Sunday race was
+    # cancelled (data.cancelled_event) is skipped by last_event, but its
+    # Saturday sprint may well have run, so it must still be considered.
+    candidates = []
+    if data.next_event and coordinator.is_race_weekend(data):
+        candidates.append(data.next_event)
+    for extra in (data.cancelled_event, data.last_event):
+        if extra is not None and all(extra.event_id != c.event_id for c in candidates):
+            candidates.append(extra)
+    far_past = datetime.min.replace(tzinfo=timezone.utc)
+    candidates.sort(key=lambda e: e.start or far_past, reverse=True)
+    if not candidates:
         connection.send_result(msg["id"], {"sprint": None})
         return
-    result = await coordinator.async_event_results(event.event_id, False, event.country_iso)
-    sprints = [
-        s for s in result.get("sessions", [])
-        if s.get("kind") == "sprint" and s.get("results")
-    ]
-    connection.send_result(
-        msg["id"],
-        {"event": _event(event), "sprint": sprints[-1] if sprints else None},
-    )
+    for event in candidates:
+        result = await coordinator.async_event_results(
+            event.event_id, False, event.country_iso
+        )
+        sprints = [
+            s for s in result.get("sessions", [])
+            if s.get("kind") == "sprint" and s.get("results") and not s.get("cancelled")
+        ]
+        if sprints:
+            connection.send_result(
+                msg["id"], {"event": _event(event), "sprint": sprints[-1]}
+            )
+            return
+    connection.send_result(msg["id"], {"event": _event(candidates[0]), "sprint": None})
 
 
 def _season(hass: HomeAssistant, series: str) -> str | None:
